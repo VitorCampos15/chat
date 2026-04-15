@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:ui="jakarta.faces.facelets">
+
+<h:head>
+    <meta charset="UTF-8"/>
+    <title><ui:insert name="title">Chat</ui:insert></title>
+    <ui:insert name="extraHead"/>
+    <style type="text/css">
+        body { font-family: system-ui, sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+        .top-bar {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            justify-content: space-between;
+        }
+        .top-bar nav { display: flex; gap: 1rem; align-items: center; }
+        .top-bar nav a { color: #93c5fd; text-decoration: none; font-weight: 500; }
+        .top-bar nav a:hover { text-decoration: underline; }
+        .config-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+        .config-form label { font-size: 0.85rem; color: #cbd5e1; }
+        .config-form input { padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
+        main { flex: 1; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; width: 100%; box-sizing: border-box; }
+        .field { margin-bottom: 0.75rem; }
+        .field label { display: block; margin-bottom: 0.25rem; }
+        .messages { margin-top: 1rem; }
+    </style>
+</h:head>
+
+<h:body>
+    <header class="top-bar">
+        <nav>
+            <h:link outcome="login" value="Login"/>
+            <h:link outcome="cadastro" value="Cadastro"/>
+        </nav>
+        <h:form id="formConfig" styleClass="config-form">
+            <h:outputLabel for="cfgIp" value="IP"/>
+            <h:inputText id="cfgIp" value="#{configuracaoBean.ip}" size="14" title="Endereço do servidor"/>
+            <h:outputLabel for="cfgPorta" value="Porta"/>
+            <h:inputText id="cfgPorta" value="#{configuracaoBean.porta}" size="6" title="Porta TCP"/>
+            <h:commandButton id="btnAplicarConfig" value="Aplicar" action="#{configuracaoBean.salvarConfiguracao()}"/>
+        </h:form>
+    </header>
+
+    <main>
+        <h:messages id="msgs" showSummary="true" showDetail="true" layout="list" styleClass="messages"/>
+        <ui:insert name="conteudo"/>
+    </main>
+</h:body>
+</html>

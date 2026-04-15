@@ -1,0 +1,36 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+
+    <ui:define name="title">Login</ui:define>
+
+    <ui:define name="conteudo">
+        <h1>Login</h1>
+
+        <h:form id="formLogin">
+            <div class="field">
+                <h:outputLabel for="usuario" value="Usuário"/>
+                <h:inputText id="usuario" value="#{usuarioBean.usuario}" required="true"
+                             requiredMessage="Informe o usuário." style="width: 100%;"/>
+            </div>
+            <div class="field">
+                <h:outputLabel for="senha" value="Senha"/>
+                <h:inputSecret id="senha" value="#{usuarioBean.senha}" required="true"
+                               requiredMessage="Informe a senha." style="width: 100%;"/>
+            </div>
+
+            <h:commandButton id="btnLogin" value="Entrar" action="#{usuarioBean.executarLogin()}"/>
+
+            <div class="field" style="margin-top: 1rem;">
+                <h:outputLabel for="tokenRecebido" value="Token (após login com sucesso)"/>
+                <h:inputText id="tokenRecebido" value="#{usuarioBean.tokenRecebido}" readonly="true"
+                             style="width: 100%;"/>
+            </div>
+        </h:form>
+
+        <p style="margin-top: 1.5rem; font-size: 0.9rem;">
+            <h:link outcome="cadastro" value="Não tem conta? Cadastre-se"/>
+        </p>
+    </ui:define>
+</ui:composition>
