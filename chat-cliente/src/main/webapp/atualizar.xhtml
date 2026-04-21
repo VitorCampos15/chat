@@ -1,0 +1,23 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+
+    <ui:define name="title">Atualizar perfil</ui:define>
+
+    <ui:define name="conteudo">
+        <h1>Atualizar perfil</h1>
+
+        <h:form id="formAtualizar">
+            <div class="field">
+                <h:outputLabel for="novoNome" value="Novo Nome"/>
+                <h:inputText id="novoNome" value="#{usuarioBean.novoNome}" style="width: 100%;"/>
+            </div>
+            <div class="field">
+                <h:outputLabel for="novaSenha" value="Nova Senha"/>
+                <h:inputSecret id="novaSenha" value="#{usuarioBean.novaSenha}" style="width: 100%;"/>
+            </div>
+            <h:commandButton id="btnAtualizar" value="Confirmar Atualização" action="#{usuarioBean.executarAtualizacao()}"/>
+        </h:form>
+    </ui:define>
+</ui:composition>

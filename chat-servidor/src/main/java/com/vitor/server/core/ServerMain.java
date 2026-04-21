@@ -2,8 +2,12 @@ package com.vitor.server.core;
 
 import com.vitor.server.network.ClientHandler;
 import com.vitor.server.repository.UsuarioRepository;
+import com.vitor.server.service.AtualizarService;
 import com.vitor.server.service.CadastroService;
+import com.vitor.server.service.DeletarService;
+import com.vitor.server.service.ConsultaService;
 import com.vitor.server.service.LoginService;
+import com.vitor.server.service.LogoutService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,13 +16,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public final class ServerMain {
-
-    /** Usada se a entrada da porta estiver vazia (Enter sem número). */
+    
     private static final int PORTA_PADRAO = 5555;
 
     private static final UsuarioRepository REPOSITORIO_USUARIOS = new UsuarioRepository();
     private static final CadastroService CADASTRO_SERVICE = new CadastroService(REPOSITORIO_USUARIOS);
     private static final LoginService LOGIN_SERVICE = new LoginService(REPOSITORIO_USUARIOS);
+    private static final LogoutService LOGOUT_SERVICE = new LogoutService(REPOSITORIO_USUARIOS);
+    private static final ConsultaService CONSULTA_SERVICE = new ConsultaService(REPOSITORIO_USUARIOS);
+    private static final AtualizarService ATUALIZAR_SERVICE = new AtualizarService(REPOSITORIO_USUARIOS);
+    private static final DeletarService DELETAR_SERVICE = new DeletarService(REPOSITORIO_USUARIOS);
 
     private ServerMain() {
     }
@@ -36,7 +43,8 @@ public final class ServerMain {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Accept ativado. Nova conexão de "
                         + clientSocket.getRemoteSocketAddress());
-                new ClientHandler(clientSocket, CADASTRO_SERVICE, LOGIN_SERVICE).start();
+                new ClientHandler(clientSocket, CADASTRO_SERVICE, LOGIN_SERVICE, LOGOUT_SERVICE,
+                        CONSULTA_SERVICE, ATUALIZAR_SERVICE, DELETAR_SERVICE).start();
             }
         } catch (IOException e) {
             System.err.println("Falha no accept ou no ServerSocket: " + e.getMessage());

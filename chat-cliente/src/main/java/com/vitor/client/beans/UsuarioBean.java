@@ -1,11 +1,12 @@
 package com.vitor.client.beans;
 
+import com.vitor.client.model.ConsultaUsuarioPayload;
 import com.vitor.client.model.GenericResponse;
 import com.vitor.client.network.TcpClientService;
 import com.vitor.client.service.UsuarioService;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
-import jakarta.faces.view.ViewScoped;
+import jakarta.enterprise.context.SessionScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -13,7 +14,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 @Named("usuarioBean")
-@ViewScoped
+@SessionScoped
 public class UsuarioBean implements Serializable {
 
     @Serial
@@ -31,6 +32,11 @@ public class UsuarioBean implements Serializable {
     private String senha;
     /** Preenchido após login com sucesso (exibição na tela). */
     private String tokenRecebido;
+    /** Resultado da operação consultaUsuario (somente leitura na UI). */
+    private String nomeConsulta;
+    private String usuarioConsulta;
+    private String novoNome;
+    private String novaSenha;
 
     public void executarCadastro() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -66,6 +72,126 @@ public class UsuarioBean implements Serializable {
         } catch (NumberFormatException e) {
             ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
         }
+    }
+
+    public void executarAtualizacao() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        try {
+            aplicarServidorTcp();
+            GenericResponse resp = usuarioService.atualizarUsuario(tokenRecebido, novoNome, novaSenha);
+            if (resp == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
+                return;
+            }
+            if ("200".equals(resp.getResposta())) {
+                aplicarMensagemProtocolo(ctx, resp);
+                novoNome = null;
+                novaSenha = null;
+                return;
+            }
+            if ("401".equals(resp.getResposta())) {
+                String detalhe = resp.getMensagem() != null ? resp.getMensagem() : "";
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
+                return;
+            }
+            aplicarMensagemProtocolo(ctx, resp);
+        } catch (NumberFormatException e) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
+        }
+    }
+
+    public void consultarDados() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        nomeConsulta = null;
+        usuarioConsulta = null;
+        try {
+            aplicarServidorTcp();
+            ConsultaUsuarioPayload resp = usuarioService.consultarUsuario(tokenRecebido);
+            if (resp == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
+                return;
+            }
+            if ("200".equals(resp.getResposta())) {
+                nomeConsulta = resp.getNome();
+                usuarioConsulta = resp.getUsuario();
+                return;
+            }
+            if ("401".equals(resp.getResposta())) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Token inválido"));
+                return;
+            }
+            String detalhe = resp.getMensagem() != null ? resp.getMensagem() : "";
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
+        } catch (NumberFormatException e) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
+        }
+    }
+
+    public String executarExclusao() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        try {
+            aplicarServidorTcp();
+            GenericResponse resp = usuarioService.deletarUsuario(tokenRecebido);
+            if (resp == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
+                return null;
+            }
+            if ("200".equals(resp.getResposta())) {
+                ctx.getExternalContext().getFlash().setKeepMessages(true);
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "Sucesso", "Deletado com sucesso"));
+                limparEstadoAposLogout();
+                return "/login.xhtml?faces-redirect=true";
+            }
+            if ("401".equals(resp.getResposta())) {
+                String detalhe = resp.getMensagem() != null ? resp.getMensagem() : "";
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
+                return null;
+            }
+            aplicarMensagemProtocolo(ctx, resp);
+            return null;
+        } catch (NumberFormatException e) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
+            return null;
+        }
+    }
+
+    public String realizarLogout() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        try {
+            aplicarServidorTcp();
+            GenericResponse resp = usuarioService.logout(tokenRecebido);
+            if (resp == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
+                return null;
+            }
+            if ("200".equals(resp.getResposta())) {
+                ctx.getExternalContext().getFlash().setKeepMessages(true);
+                aplicarMensagemProtocolo(ctx, resp);
+                limparEstadoAposLogout();
+                return "/login.xhtml?faces-redirect=true";
+            }
+            if ("401".equals(resp.getResposta())) {
+                aplicarMensagemProtocolo(ctx, resp);
+                return null;
+            }
+            aplicarMensagemProtocolo(ctx, resp);
+            return null;
+        } catch (NumberFormatException e) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
+            return null;
+        }
+    }
+
+    /** Limpa token e dados de formulário; mantém a sessão (ex.: IP/porta em ConfiguracaoBean). */
+    private void limparEstadoAposLogout() {
+        tokenRecebido = null;
+        nome = null;
+        usuario = null;
+        senha = null;
+        nomeConsulta = null;
+        usuarioConsulta = null;
+        novoNome = null;
+        novaSenha = null;
     }
 
     private void aplicarServidorTcp() {
@@ -113,5 +239,37 @@ public class UsuarioBean implements Serializable {
 
     public void setTokenRecebido(String tokenRecebido) {
         this.tokenRecebido = tokenRecebido;
+    }
+
+    public String getNomeConsulta() {
+        return nomeConsulta;
+    }
+
+    public void setNomeConsulta(String nomeConsulta) {
+        this.nomeConsulta = nomeConsulta;
+    }
+
+    public String getUsuarioConsulta() {
+        return usuarioConsulta;
+    }
+
+    public void setUsuarioConsulta(String usuarioConsulta) {
+        this.usuarioConsulta = usuarioConsulta;
+    }
+
+    public String getNovoNome() {
+        return novoNome;
+    }
+
+    public void setNovoNome(String novoNome) {
+        this.novoNome = novoNome;
+    }
+
+    public String getNovaSenha() {
+        return novaSenha;
+    }
+
+    public void setNovaSenha(String novaSenha) {
+        this.novaSenha = novaSenha;
     }
 }

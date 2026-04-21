@@ -5,8 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vitor.server.model.CadastroRequest;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.LoginRequest;
+import com.vitor.server.model.LogoutRequest;
+import com.vitor.server.model.AtualizarUsuarioRequest;
+import com.vitor.server.model.ConsultaUsuarioRequest;
+import com.vitor.server.model.DeletarUsuarioRequest;
+import com.vitor.server.model.ConsultaUsuarioResponse;
+import com.vitor.server.service.AtualizarService;
 import com.vitor.server.service.CadastroService;
+import com.vitor.server.service.DeletarService;
+import com.vitor.server.service.ConsultaService;
 import com.vitor.server.service.LoginService;
+import com.vitor.server.service.LogoutService;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,11 +32,21 @@ public class ClientHandler extends Thread {
     private final Socket clientSocket;
     private final CadastroService cadastroService;
     private final LoginService loginService;
+    private final LogoutService logoutService;
+    private final ConsultaService consultaService;
+    private final AtualizarService atualizarService;
+    private final DeletarService deletarService;
 
-    public ClientHandler(Socket clientSocket, CadastroService cadastroService, LoginService loginService) {
+    public ClientHandler(Socket clientSocket, CadastroService cadastroService, LoginService loginService,
+                         LogoutService logoutService, ConsultaService consultaService,
+                         AtualizarService atualizarService, DeletarService deletarService) {
         this.clientSocket = clientSocket;
         this.cadastroService = cadastroService;
         this.loginService = loginService;
+        this.logoutService = logoutService;
+        this.consultaService = consultaService;
+        this.atualizarService = atualizarService;
+        this.deletarService = deletarService;
     }
 
     @Override
@@ -78,6 +97,35 @@ public class ClientHandler extends Thread {
                 out.println(json);
                 System.out.println("[ClientHandler] OK login | cliente=" + remoto
                         + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
+            } else if ("logout".equals(op)) {
+                LogoutRequest request = MAPPER.readValue(linha, LogoutRequest.class);
+                GenericResponse resp = logoutService.processarLogout(request);
+                String json = MAPPER.writeValueAsString(resp);
+                out.println(json);
+                System.out.println("[ClientHandler] OK logout | cliente=" + remoto
+                        + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
+            } else if ("consultaUsuario".equals(op)) {
+                ConsultaUsuarioRequest request = MAPPER.readValue(linha, ConsultaUsuarioRequest.class);
+                Object resp = consultaService.processarConsulta(request);
+                String json = MAPPER.writeValueAsString(resp);
+                out.println(json);
+                String resposta = extrairRespostaConsulta(resp);
+                System.out.println("[ClientHandler] OK consultaUsuario | cliente=" + remoto
+                        + " | resposta=" + resposta);
+            } else if ("atualizarUsuario".equals(op)) {
+                AtualizarUsuarioRequest request = MAPPER.readValue(linha, AtualizarUsuarioRequest.class);
+                GenericResponse resp = atualizarService.processarAtualizacao(request);
+                String json = MAPPER.writeValueAsString(resp);
+                out.println(json);
+                System.out.println("[ClientHandler] OK atualizarUsuario | cliente=" + remoto
+                        + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
+            } else if ("deletarUsuario".equals(op)) {
+                DeletarUsuarioRequest request = MAPPER.readValue(linha, DeletarUsuarioRequest.class);
+                GenericResponse resp = deletarService.processarExclusao(request);
+                String json = MAPPER.writeValueAsString(resp);
+                out.println(json);
+                System.out.println("[ClientHandler] OK deletarUsuario | cliente=" + remoto
+                        + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
             } else {
                 System.err.println("[ClientHandler] ERRO: operação não suportada '" + op + "'. Cliente: " + remoto);
                 enviarJson(out, respostaErro("Operação não suportada: " + op));
@@ -91,6 +139,16 @@ public class ClientHandler extends Thread {
                 System.err.println("[ClientHandler] ERRO ao enviar resposta de erro: " + ex.getMessage());
             }
         }
+    }
+
+    private static String extrairRespostaConsulta(Object resp) {
+        if (resp instanceof GenericResponse gr) {
+            return gr.getResposta();
+        }
+        if (resp instanceof ConsultaUsuarioResponse cr) {
+            return cr.getResposta();
+        }
+        return "?";
     }
 
     private static GenericResponse respostaErro(String mensagem) {

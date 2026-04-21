@@ -1,0 +1,46 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+
+    <ui:define name="title">Excluir conta</ui:define>
+
+    <ui:define name="extraHead">
+        <style type="text/css">
+            .aviso-exclusao {
+                padding: 1rem 1.25rem;
+                border-radius: 8px;
+                border: 1px solid #f59e0b;
+                background: #fffbeb;
+                color: #92400e;
+                margin-bottom: 1.25rem;
+                line-height: 1.5;
+            }
+            .btn-excluir-conta {
+                background: #b91c1c !important;
+                color: #fff !important;
+                border: 1px solid #7f1d1d !important;
+                padding: 0.5rem 1rem !important;
+                font-weight: 600 !important;
+                border-radius: 6px !important;
+                cursor: pointer;
+            }
+            .btn-excluir-conta:hover {
+                background: #991b1b !important;
+            }
+        </style>
+    </ui:define>
+
+    <ui:define name="conteudo">
+        <h1>Excluir conta</h1>
+
+        <p class="aviso-exclusao">
+            Tem certeza que deseja excluir sua conta? Esta ação é irreversível.
+        </p>
+
+        <h:form id="formExcluir">
+            <h:commandButton id="btnExcluirConta" value="Excluir Minha Conta" action="#{usuarioBean.executarExclusao()}"
+                             styleClass="btn-excluir-conta"/>
+        </h:form>
+    </ui:define>
+</ui:composition>

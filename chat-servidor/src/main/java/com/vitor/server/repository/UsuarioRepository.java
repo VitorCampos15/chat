@@ -35,4 +35,26 @@ public class UsuarioRepository {
         }
         tokensAtivos.put(token, usuario);
     }
+
+    /**
+     * Remove o token dos ativos. Retorna {@code true} se a entrada existia.
+     */
+    public boolean removerToken(String token) {
+        return token != null && tokensAtivos.remove(token) != null;
+    }
+
+    /** Login associado ao token ativo, ou {@code null} se ausente ou token inválido. */
+    public String obterLoginPorToken(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        return tokensAtivos.get(token);
+    }
+
+    /** Remove o cadastro do usuário identificado pelo login. */
+    public void removerUsuarioPorLogin(String login) {
+        if (login != null) {
+            usuariosPorLogin.remove(login);
+        }
+    }
 }
