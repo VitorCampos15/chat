@@ -96,7 +96,8 @@ public class ClientHandler extends Thread {
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 System.out.println("[ClientHandler] OK login | cliente=" + remoto
-                        + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
+                        + " | resposta=" + resp.getResposta()
+                        + (resp.getToken() != null ? " | token=(presente)" : " | mensagem=" + resp.getMensagem()));
             } else if ("logout".equals(op)) {
                 LogoutRequest request = MAPPER.readValue(linha, LogoutRequest.class);
                 GenericResponse resp = logoutService.processarLogout(request);
@@ -104,13 +105,13 @@ public class ClientHandler extends Thread {
                 out.println(json);
                 System.out.println("[ClientHandler] OK logout | cliente=" + remoto
                         + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
-            } else if ("consultaUsuario".equals(op)) {
+            } else if ("consultarUsuario".equals(op)) {
                 ConsultaUsuarioRequest request = MAPPER.readValue(linha, ConsultaUsuarioRequest.class);
                 Object resp = consultaService.processarConsulta(request);
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 String resposta = extrairRespostaConsulta(resp);
-                System.out.println("[ClientHandler] OK consultaUsuario | cliente=" + remoto
+                System.out.println("[ClientHandler] OK consultarUsuario | cliente=" + remoto
                         + " | resposta=" + resposta);
             } else if ("atualizarUsuario".equals(op)) {
                 AtualizarUsuarioRequest request = MAPPER.readValue(linha, AtualizarUsuarioRequest.class);
@@ -155,7 +156,7 @@ public class ClientHandler extends Thread {
         GenericResponse r = new GenericResponse();
         r.setResposta("401");
         r.setMensagem(mensagem);
-        r.setToken("");
+        r.setToken(null);
         return r;
     }
 

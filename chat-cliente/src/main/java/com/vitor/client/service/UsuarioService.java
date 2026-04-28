@@ -82,7 +82,7 @@ public class UsuarioService {
     public ConsultaUsuarioPayload consultarUsuario(String token) {
         try {
             ConsultaUsuarioRequest request = new ConsultaUsuarioRequest();
-            request.setOp("consultaUsuario");
+            request.setOp("consultarUsuario");
             request.setToken(token);
 
             String json = MAPPER.writeValueAsString(request);

@@ -32,7 +32,7 @@ public class UsuarioBean implements Serializable {
     private String senha;
     /** Preenchido após login com sucesso (exibição na tela). */
     private String tokenRecebido;
-    /** Resultado da operação consultaUsuario (somente leitura na UI). */
+    /** Resultado da operação consultarUsuario (somente leitura na UI). */
     private String nomeConsulta;
     private String usuarioConsulta;
     private String novoNome;
@@ -83,18 +83,11 @@ public class UsuarioBean implements Serializable {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return;
             }
+            aplicarMensagemProtocolo(ctx, resp);
             if ("200".equals(resp.getResposta())) {
-                aplicarMensagemProtocolo(ctx, resp);
                 novoNome = null;
                 novaSenha = null;
-                return;
             }
-            if ("401".equals(resp.getResposta())) {
-                String detalhe = resp.getMensagem() != null ? resp.getMensagem() : "";
-                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
-                return;
-            }
-            aplicarMensagemProtocolo(ctx, resp);
         } catch (NumberFormatException e) {
             ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
         }
@@ -117,10 +110,11 @@ public class UsuarioBean implements Serializable {
                 return;
             }
             if ("401".equals(resp.getResposta())) {
-                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Token inválido"));
+                String detalhe = mensagemDoServidor(resp.getMensagem());
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
                 return;
             }
-            String detalhe = resp.getMensagem() != null ? resp.getMensagem() : "";
+            String detalhe = mensagemDoServidor(resp.getMensagem());
             ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
         } catch (NumberFormatException e) {
             ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida", "Informe um número inteiro válido na barra superior."));
@@ -138,12 +132,13 @@ public class UsuarioBean implements Serializable {
             }
             if ("200".equals(resp.getResposta())) {
                 ctx.getExternalContext().getFlash().setKeepMessages(true);
-                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "Sucesso", "Deletado com sucesso"));
+                String detalhe = mensagemDoServidor(resp.getMensagem());
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, "Sucesso", detalhe));
                 limparEstadoAposLogout();
                 return "/login.xhtml?faces-redirect=true";
             }
             if ("401".equals(resp.getResposta())) {
-                String detalhe = resp.getMensagem() != null ? resp.getMensagem() : "";
+                String detalhe = mensagemDoServidor(resp.getMensagem());
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
                 return null;
             }
@@ -205,8 +200,12 @@ public class UsuarioBean implements Serializable {
         boolean erro = !sucesso;
         FacesMessage.Severity severity = erro ? FacesMessage.SEVERITY_ERROR : FacesMessage.SEVERITY_INFO;
         String summary = sucesso ? "Sucesso" : "Erro";
-        String detail = resp.getMensagem() != null ? resp.getMensagem() : "";
+        String detail = mensagemDoServidor(resp.getMensagem());
         ctx.addMessage(null, new FacesMessage(severity, summary, detail));
+    }
+
+    private static String mensagemDoServidor(String mensagem) {
+        return mensagem != null ? mensagem : "";
     }
 
     public String getNome() {

@@ -4,12 +4,9 @@ import com.vitor.server.model.AtualizarUsuarioRequest;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.Usuario;
 import com.vitor.server.repository.UsuarioRepository;
-
-import java.util.regex.Pattern;
+import com.vitor.server.validation.ProtocoloValidacao;
 
 public class AtualizarService {
-
-    private static final Pattern SENHA_SEIS_DIGITOS = Pattern.compile("^\\d{6}$");
 
     private final UsuarioRepository usuarioRepository;
 
@@ -37,8 +34,8 @@ public class AtualizarService {
         if (isVazio(nome) || isVazio(senha)) {
             return "Todos os campos devem estar preenchidos.";
         }
-        if (!SENHA_SEIS_DIGITOS.matcher(senha).matches()) {
-            return "Senha inválida. Use apenas números e exatamente 6 dígitos.";
+        if (!ProtocoloValidacao.isSenhaConforme(senha)) {
+            return ProtocoloValidacao.MSG_SENHA_FORMATO;
         }
         return null;
     }
@@ -47,7 +44,7 @@ public class AtualizarService {
         GenericResponse r = new GenericResponse();
         r.setResposta("401");
         r.setMensagem(mensagem);
-        r.setToken("");
+        r.setToken(null);
         return r;
     }
 
@@ -75,7 +72,7 @@ public class AtualizarService {
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");
         ok.setMensagem("Atualizado com sucesso");
-        ok.setToken("");
+        ok.setToken(null);
         return ok;
     }
 }

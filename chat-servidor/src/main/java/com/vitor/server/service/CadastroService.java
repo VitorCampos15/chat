@@ -4,12 +4,9 @@ import com.vitor.server.model.CadastroRequest;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.Usuario;
 import com.vitor.server.repository.UsuarioRepository;
-
-import java.util.regex.Pattern;
+import com.vitor.server.validation.ProtocoloValidacao;
 
 public class CadastroService {
-
-    private static final Pattern SENHA_SEIS_DIGITOS = Pattern.compile("^\\d{6}$");
 
     private final UsuarioRepository usuarioRepository;
 
@@ -26,13 +23,12 @@ public class CadastroService {
             return "Todos os campos devem estar preenchidos.";
         }
 
-        int uLen = usuario.length();
-        if (uLen < 5 || uLen > 20 || usuario.contains(" ")) {
-            return "Usuário inválido (deve ter entre 5 e 20 caracteres e sem espaços).";
+        if (!ProtocoloValidacao.isUsuarioConforme(usuario)) {
+            return ProtocoloValidacao.MSG_USUARIO_FORMATO;
         }
 
-        if (!SENHA_SEIS_DIGITOS.matcher(senha).matches()) {
-            return "Senha inválida. Use apenas números e exatamente 6 dígitos.";
+        if (!ProtocoloValidacao.isSenhaConforme(senha)) {
+            return ProtocoloValidacao.MSG_SENHA_FORMATO;
         }
 
         return null;
@@ -48,7 +44,7 @@ public class CadastroService {
             GenericResponse r = new GenericResponse();
             r.setResposta("401");
             r.setMensagem(erro);
-            r.setToken("");
+            r.setToken(null);
             return r;
         }
 
@@ -56,7 +52,7 @@ public class CadastroService {
             GenericResponse r = new GenericResponse();
             r.setResposta("401");
             r.setMensagem("Usuário já cadastrado.");
-            r.setToken("");
+            r.setToken(null);
             return r;
         }
 
@@ -65,7 +61,7 @@ public class CadastroService {
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");
         ok.setMensagem("Cadastrado com sucesso.");
-        ok.setToken("");
+        ok.setToken(null);
         return ok;
     }
 }

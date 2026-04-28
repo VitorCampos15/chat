@@ -23,7 +23,7 @@ public class DeletarService {
         GenericResponse r = new GenericResponse();
         r.setResposta("401");
         r.setMensagem("Token inválido");
-        r.setToken("");
+        r.setToken(null);
         return r;
     }
 
@@ -42,7 +42,7 @@ public class DeletarService {
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");
         ok.setMensagem("Deletado com sucesso");
-        ok.setToken("");
+        ok.setToken(null);
         return ok;
     }
 }

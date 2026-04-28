@@ -22,7 +22,8 @@ public class ConsultaService {
     }
 
     /**
-     * Sucesso: {@link ConsultaUsuarioResponse}. Falha de token: {@link GenericResponse} com 401.
+     * Sucesso: {@link ConsultaUsuarioResponse} com resposta, nome e usuario.
+     * Falha: {@link GenericResponse} com 401 e mensagem.
      */
     public Object processarConsulta(ConsultaUsuarioRequest request) {
         String token = request != null ? request.getToken() : null;
@@ -30,7 +31,7 @@ public class ConsultaService {
             GenericResponse r = new GenericResponse();
             r.setResposta("401");
             r.setMensagem("Token inválido");
-            r.setToken("");
+            r.setToken(null);
             return r;
         }
         String login = usuarioRepository.obterLoginPorToken(token);
@@ -39,7 +40,7 @@ public class ConsultaService {
             GenericResponse r = new GenericResponse();
             r.setResposta("401");
             r.setMensagem("Token inválido");
-            r.setToken("");
+            r.setToken(null);
             return r;
         }
         ConsultaUsuarioResponse ok = new ConsultaUsuarioResponse();

@@ -27,7 +27,7 @@ public class LogoutService {
         GenericResponse r = new GenericResponse();
         r.setResposta("401");
         r.setMensagem("Erro ao efetuar logout");
-        r.setToken("");
+        r.setToken(null);
         return r;
     }
 
@@ -41,7 +41,7 @@ public class LogoutService {
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");
         ok.setMensagem("logout efetuado");
-        ok.setToken("");
+        ok.setToken(null);
         return ok;
     }
 }

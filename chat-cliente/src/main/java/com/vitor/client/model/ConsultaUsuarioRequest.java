@@ -7,7 +7,7 @@ import lombok.Data;
 public class ConsultaUsuarioRequest {
 
     @JsonProperty("op")
-    private String op = "consultaUsuario";
+    private String op = "consultarUsuario";
 
     @JsonProperty("token")
     private String token;

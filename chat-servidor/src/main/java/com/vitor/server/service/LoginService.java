@@ -9,38 +9,34 @@ import java.util.UUID;
 
 public class LoginService {
 
+    private static final String MSG_LOGIN_401 = "Usuário ou senha inválidos";
+
     private final UsuarioRepository usuarioRepository;
 
     public LoginService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
 
-    private String inputValidation(LoginRequest request) {
-        String u = request.getUsuario();
-        String s = request.getSenha();
-        if (u == null || u.isBlank() || s == null || s.isBlank()) {
-            return "Usuário e senha são obrigatórios.";
-        }
-        return null;
+    private static boolean isVazio(String s) {
+        return s == null || s.isBlank();
+    }
+
+    private static GenericResponse loginErro401() {
+        GenericResponse r = new GenericResponse();
+        r.setResposta("401");
+        r.setMensagem(MSG_LOGIN_401);
+        r.setToken(null);
+        return r;
     }
 
     public GenericResponse processarLogin(LoginRequest request) {
-        String erro = inputValidation(request);
-        if (erro != null) {
-            GenericResponse r = new GenericResponse();
-            r.setResposta("401");
-            r.setMensagem(erro);
-            r.setToken("");
-            return r;
+        if (request == null || isVazio(request.getUsuario()) || isVazio(request.getSenha())) {
+            return loginErro401();
         }
 
         Usuario cadastrado = usuarioRepository.buscarPorUsuario(request.getUsuario());
         if (cadastrado == null || !request.getSenha().equals(cadastrado.getSenha())) {
-            GenericResponse r = new GenericResponse();
-            r.setResposta("401");
-            r.setMensagem("Usuário ou senha incorretos.");
-            r.setToken("");
-            return r;
+            return loginErro401();
         }
 
         String token = UUID.randomUUID().toString();
@@ -48,7 +44,7 @@ public class LoginService {
 
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");
-        ok.setMensagem("Login realizado com sucesso.");
+        ok.setMensagem(null);
         ok.setToken(token);
         return ok;
     }
