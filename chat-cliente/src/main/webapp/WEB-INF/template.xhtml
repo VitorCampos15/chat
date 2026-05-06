@@ -54,6 +54,8 @@
             <h:outputLabel for="cfgPorta" value="Porta"/>
             <h:inputText id="cfgPorta" value="#{configuracaoBean.porta}" size="6" title="Porta TCP"/>
             <h:commandButton id="btnAplicarConfig" value="Aplicar" action="#{configuracaoBean.salvarConfiguracao()}"/>
+            <h:commandButton id="btnDesconectarTcp" value="Desconectar" action="#{usuarioBean.desconectarTcp()}"
+                             rendered="#{usuarioBean.tcpConectado}"/>
         </h:form>
     </header>
 

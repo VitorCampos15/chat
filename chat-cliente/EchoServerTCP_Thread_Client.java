@@ -41,7 +41,6 @@ public class EchoServerTCP_Thread_Client {
         while ((userInput = stdIn.readLine()) != null) {
             out.println(userInput);
 
-            // end loop
             if (userInput.toUpperCase().equals("BYE"))
                 break;
 

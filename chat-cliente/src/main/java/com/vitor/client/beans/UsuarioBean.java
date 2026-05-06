@@ -189,6 +189,16 @@ public class UsuarioBean implements Serializable {
         novaSenha = null;
     }
 
+    public void desconectarTcp() {
+        tcpClientService.disconnect();
+        FacesContext.getCurrentInstance().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO, "TCP", "Conexão com o servidor encerrada."));
+    }
+
+    public boolean isTcpConectado() {
+        return tcpClientService.isConectado();
+    }
+
     private void aplicarServidorTcp() {
         tcpClientService.setIp(configuracaoBean.getIp());
         tcpClientService.setPorta(Integer.parseInt(configuracaoBean.getPorta().trim()));
