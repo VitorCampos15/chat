@@ -7,9 +7,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class UsuarioRepository {
 
+    private static final String ADMIN_LOGIN = "admin";
+    private static final String TOKEN_ADMIN = "adm";
+
     private final Map<String, Usuario> usuariosPorLogin = new ConcurrentHashMap<>();
-    /** Chave = token (UUID), valor = login do usuário. */
     private final Map<String, String> tokensAtivos = new ConcurrentHashMap<>();
+
+    public UsuarioRepository() {
+        inicializarAdmin();
+    }
+
+    private void inicializarAdmin() {
+        if (!existeUsuario(ADMIN_LOGIN)) {
+            salvar(new Usuario("admin", ADMIN_LOGIN, "123456"));
+        }
+        tokensAtivos.put(TOKEN_ADMIN, ADMIN_LOGIN);
+    }
 
     public boolean existeUsuario(String usuario) {
         return usuario != null && usuariosPorLogin.containsKey(usuario);

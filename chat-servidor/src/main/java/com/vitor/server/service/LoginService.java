@@ -5,10 +5,11 @@ import com.vitor.server.model.LoginRequest;
 import com.vitor.server.model.Usuario;
 import com.vitor.server.repository.UsuarioRepository;
 
-import java.util.UUID;
-
 public class LoginService {
 
+    private static final String ADMIN_LOGIN = "admin";
+    private static final String TOKEN_ADMIN = "adm";
+    private static final String PREFIXO_TOKEN_USUARIO = "usr_";
     private static final String MSG_LOGIN_401 = "Usuário ou senha inválidos";
 
     private final UsuarioRepository usuarioRepository;
@@ -39,12 +40,15 @@ public class LoginService {
             return loginErro401();
         }
 
-        String token = UUID.randomUUID().toString();
-        usuarioRepository.registrarToken(token, request.getUsuario());
+        String login = request.getUsuario();
+        String token = ADMIN_LOGIN.equals(login)
+                ? TOKEN_ADMIN
+                : PREFIXO_TOKEN_USUARIO + login;
+
+        usuarioRepository.registrarToken(token, login);
 
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");
-        ok.setMensagem(null);
         ok.setToken(token);
         return ok;
     }
