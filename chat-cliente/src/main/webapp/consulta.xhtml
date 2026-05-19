@@ -8,20 +8,18 @@
     <ui:define name="conteudo">
         <h1>Consultar dados</h1>
 
-        <h:form id="formConsulta">
-            <div class="field">
-                <h:commandButton id="btnConsultar" value="Consultar Meus Dados" action="#{usuarioBean.consultarDados()}"/>
-            </div>
-            <div class="field">
-                <h:outputLabel for="nomeConsulta" value="Nome"/>
-                <h:inputText id="nomeConsulta" value="#{usuarioBean.nomeConsulta}" readonly="true"
-                             style="width: 100%;"/>
-            </div>
-            <div class="field">
-                <h:outputLabel for="usuarioConsulta" value="Usuário"/>
-                <h:inputText id="usuarioConsulta" value="#{usuarioBean.usuarioConsulta}" readonly="true"
-                             style="width: 100%;"/>
-            </div>
-        </h:form>
+        <div class="field">
+            <h:commandButton id="btnConsultar" value="Consultar Meus Dados" action="#{usuarioBean.consultarDados()}"/>
+        </div>
+        <div class="field">
+            <h:outputLabel for="nomeConsulta" value="Nome"/>
+            <h:inputText id="nomeConsulta" value="#{usuarioBean.nomeConsulta}" readonly="true"
+                         style="width: 100%;"/>
+        </div>
+        <div class="field">
+            <h:outputLabel for="usuarioConsulta" value="Usuário"/>
+            <h:inputText id="usuarioConsulta" value="#{usuarioBean.usuarioConsulta}" readonly="true"
+                         style="width: 100%;"/>
+        </div>
     </ui:define>
 </ui:composition>

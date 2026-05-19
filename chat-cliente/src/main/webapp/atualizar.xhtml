@@ -8,16 +8,14 @@
     <ui:define name="conteudo">
         <h1>Atualizar perfil</h1>
 
-        <h:form id="formAtualizar">
-            <div class="field">
-                <h:outputLabel for="novoNome" value="Novo Nome"/>
-                <h:inputText id="novoNome" value="#{usuarioBean.novoNome}" style="width: 100%;"/>
-            </div>
-            <div class="field">
-                <h:outputLabel for="novaSenha" value="Nova Senha"/>
-                <h:inputSecret id="novaSenha" value="#{usuarioBean.novaSenha}" style="width: 100%;"/>
-            </div>
-            <h:commandButton id="btnAtualizar" value="Confirmar Atualização" action="#{usuarioBean.executarAtualizacao()}"/>
-        </h:form>
+        <div class="field">
+            <h:outputLabel for="novoNome" value="Novo Nome"/>
+            <h:inputText id="novoNome" value="#{usuarioBean.novoNome}" style="width: 100%;"/>
+        </div>
+        <div class="field">
+            <h:outputLabel for="novaSenha" value="Nova Senha"/>
+            <h:inputSecret id="novaSenha" value="#{usuarioBean.novaSenha}" style="width: 100%;"/>
+        </div>
+        <h:commandButton id="btnAtualizar" value="Confirmar Atualização" action="#{usuarioBean.executarAtualizacao()}"/>
     </ui:define>
 </ui:composition>

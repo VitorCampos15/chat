@@ -25,6 +25,17 @@ public class UsuarioService {
     @Inject
     private TcpClientService tcpService;
 
+    private String ultimoJsonEnviado;
+    private String ultimoJsonRecebido;
+
+    public String getUltimoJsonEnviado() {
+        return ultimoJsonEnviado;
+    }
+
+    public String getUltimoJsonRecebido() {
+        return ultimoJsonRecebido;
+    }
+
     public GenericResponse cadastrar(String nome, String user, String senha) {
         try {
             CadastroRequest request = new CadastroRequest();
@@ -34,13 +45,9 @@ public class UsuarioService {
             request.setSenha(senha);
 
             String json = MAPPER.writeValueAsString(request);
-            String linha = tcpService.sendRequest(json);
-            return MAPPER.readValue(linha, GenericResponse.class);
+            return enviarEInterpretar(json, GenericResponse.class);
         } catch (IOException e) {
-            GenericResponse erro = new GenericResponse();
-            erro.setResposta("erro");
-            erro.setMensagem(e.getMessage());
-            return erro;
+            return respostaErroGeneric(e);
         }
     }
 
@@ -52,13 +59,9 @@ public class UsuarioService {
             request.setSenha(senha);
 
             String json = MAPPER.writeValueAsString(request);
-            String linha = tcpService.sendRequest(json);
-            return MAPPER.readValue(linha, GenericResponse.class);
+            return enviarEInterpretar(json, GenericResponse.class);
         } catch (IOException e) {
-            GenericResponse erro = new GenericResponse();
-            erro.setResposta("erro");
-            erro.setMensagem(e.getMessage());
-            return erro;
+            return respostaErroGeneric(e);
         }
     }
 
@@ -69,13 +72,9 @@ public class UsuarioService {
             request.setToken(token);
 
             String json = MAPPER.writeValueAsString(request);
-            String linha = tcpService.sendRequest(json);
-            return MAPPER.readValue(linha, GenericResponse.class);
+            return enviarEInterpretar(json, GenericResponse.class);
         } catch (IOException e) {
-            GenericResponse erro = new GenericResponse();
-            erro.setResposta("erro");
-            erro.setMensagem(e.getMessage());
-            return erro;
+            return respostaErroGeneric(e);
         }
     }
 
@@ -86,13 +85,9 @@ public class UsuarioService {
             request.setToken(token);
 
             String json = MAPPER.writeValueAsString(request);
-            String linha = tcpService.sendRequest(json);
-            return MAPPER.readValue(linha, ConsultaUsuarioPayload.class);
+            return enviarEInterpretar(json, ConsultaUsuarioPayload.class);
         } catch (IOException e) {
-            ConsultaUsuarioPayload erro = new ConsultaUsuarioPayload();
-            erro.setResposta("erro");
-            erro.setMensagem(e.getMessage());
-            return erro;
+            return respostaErroConsulta(e);
         }
     }
 
@@ -105,13 +100,9 @@ public class UsuarioService {
             request.setSenha(senha);
 
             String json = MAPPER.writeValueAsString(request);
-            String linha = tcpService.sendRequest(json);
-            return MAPPER.readValue(linha, GenericResponse.class);
+            return enviarEInterpretar(json, GenericResponse.class);
         } catch (IOException e) {
-            GenericResponse erro = new GenericResponse();
-            erro.setResposta("erro");
-            erro.setMensagem(e.getMessage());
-            return erro;
+            return respostaErroGeneric(e);
         }
     }
 
@@ -122,13 +113,38 @@ public class UsuarioService {
             request.setToken(token);
 
             String json = MAPPER.writeValueAsString(request);
-            String linha = tcpService.sendRequest(json);
-            return MAPPER.readValue(linha, GenericResponse.class);
+            return enviarEInterpretar(json, GenericResponse.class);
         } catch (IOException e) {
-            GenericResponse erro = new GenericResponse();
-            erro.setResposta("erro");
-            erro.setMensagem(e.getMessage());
-            return erro;
+            return respostaErroGeneric(e);
+        }
+    }
+
+    private <T> T enviarEInterpretar(String json, Class<T> tipoResposta) throws IOException {
+        ultimoJsonEnviado = json;
+        String linha = tcpService.sendRequest(json);
+        ultimoJsonRecebido = linha;
+        return MAPPER.readValue(linha, tipoResposta);
+    }
+
+    private GenericResponse respostaErroGeneric(IOException e) {
+        registrarJsonRecebidoEmFalha(e);
+        GenericResponse erro = new GenericResponse();
+        erro.setResposta("erro");
+        erro.setMensagem(e.getMessage());
+        return erro;
+    }
+
+    private ConsultaUsuarioPayload respostaErroConsulta(IOException e) {
+        registrarJsonRecebidoEmFalha(e);
+        ConsultaUsuarioPayload erro = new ConsultaUsuarioPayload();
+        erro.setResposta("erro");
+        erro.setMensagem(e.getMessage());
+        return erro;
+    }
+
+    private void registrarJsonRecebidoEmFalha(IOException e) {
+        if (ultimoJsonRecebido == null) {
+            ultimoJsonRecebido = e.getMessage();
         }
     }
 }

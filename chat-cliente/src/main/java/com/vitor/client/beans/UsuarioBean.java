@@ -30,13 +30,17 @@ public class UsuarioBean implements Serializable {
     private String nome;
     private String usuario;
     private String senha;
-    /** Preenchido após login com sucesso (exibição na tela). */
+    /** Token enviado nas operações autenticadas; editável na barra superior para testes. */
     private String tokenRecebido;
     /** Resultado da operação consultarUsuario (somente leitura na UI). */
     private String nomeConsulta;
     private String usuarioConsulta;
     private String novoNome;
     private String novaSenha;
+    /** Último JSON enviado ao servidor (exibição na apresentação). */
+    private String jsonEnviado;
+    /** Última linha JSON recebida do servidor (exibição na apresentação). */
+    private String jsonRecebido;
 
     public void executarCadastro() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -44,6 +48,7 @@ public class UsuarioBean implements Serializable {
             aplicarServidorTcp();
 
             GenericResponse resp = usuarioService.cadastrar(nome, usuario, senha);
+            registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return;
@@ -61,6 +66,7 @@ public class UsuarioBean implements Serializable {
             aplicarServidorTcp();
 
             GenericResponse resp = usuarioService.login(usuario, senha);
+            registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return;
@@ -79,6 +85,7 @@ public class UsuarioBean implements Serializable {
         try {
             aplicarServidorTcp();
             GenericResponse resp = usuarioService.atualizarUsuario(tokenRecebido, novoNome, novaSenha);
+            registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return;
@@ -100,6 +107,7 @@ public class UsuarioBean implements Serializable {
         try {
             aplicarServidorTcp();
             ConsultaUsuarioPayload resp = usuarioService.consultarUsuario(tokenRecebido);
+            registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return;
@@ -126,6 +134,7 @@ public class UsuarioBean implements Serializable {
         try {
             aplicarServidorTcp();
             GenericResponse resp = usuarioService.deletarUsuario(tokenRecebido);
+            registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return null;
@@ -155,6 +164,7 @@ public class UsuarioBean implements Serializable {
         try {
             aplicarServidorTcp();
             GenericResponse resp = usuarioService.logout(tokenRecebido);
+            registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
                 return null;
@@ -202,6 +212,11 @@ public class UsuarioBean implements Serializable {
     private void aplicarServidorTcp() {
         tcpClientService.setIp(configuracaoBean.getIp());
         tcpClientService.setPorta(Integer.parseInt(configuracaoBean.getPorta().trim()));
+    }
+
+    private void registrarJsonsDaUltimaChamada() {
+        jsonEnviado = usuarioService.getUltimoJsonEnviado();
+        jsonRecebido = usuarioService.getUltimoJsonRecebido();
     }
 
     private static void aplicarMensagemProtocolo(FacesContext ctx, GenericResponse resp) {
@@ -280,5 +295,21 @@ public class UsuarioBean implements Serializable {
 
     public void setNovaSenha(String novaSenha) {
         this.novaSenha = novaSenha;
+    }
+
+    public String getJsonEnviado() {
+        return jsonEnviado;
+    }
+
+    public void setJsonEnviado(String jsonEnviado) {
+        this.jsonEnviado = jsonEnviado;
+    }
+
+    public String getJsonRecebido() {
+        return jsonRecebido;
+    }
+
+    public void setJsonRecebido(String jsonRecebido) {
+        this.jsonRecebido = jsonRecebido;
     }
 }
