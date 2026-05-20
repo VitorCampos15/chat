@@ -11,9 +11,11 @@ public class UsuarioRepository {
 
     private static final String ADMIN_LOGIN = "admin";
     private static final String TOKEN_ADMIN = "adm";
+    private static final String SEPARADOR_CHAVE = "#";
 
-    private final Map<String, Usuario> usuariosPorLogin = new ConcurrentHashMap<>();
+    /** Chave = token#ip#porta, valor = login do usuário. */
     private final Map<String, String> tokensAtivos = new ConcurrentHashMap<>();
+    private final Map<String, Usuario> usuariosPorLogin = new ConcurrentHashMap<>();
 
     public UsuarioRepository() {
         inicializarAdmin();
@@ -23,7 +25,10 @@ public class UsuarioRepository {
         if (!existeUsuario(ADMIN_LOGIN)) {
             salvar(new Usuario("admin", ADMIN_LOGIN, "123456"));
         }
-        tokensAtivos.put(TOKEN_ADMIN, ADMIN_LOGIN);
+    }
+
+    public static String montarChaveToken(String token, String ip, int porta) {
+        return token + SEPARADOR_CHAVE + ip + SEPARADOR_CHAVE + porta;
     }
 
     public boolean existeUsuario(String usuario) {
@@ -44,26 +49,49 @@ public class UsuarioRepository {
         usuariosPorLogin.put(usuario.getUsuario(), usuario);
     }
 
-    public void registrarToken(String token, String usuario) {
-        if (token == null || usuario == null) {
-            throw new IllegalArgumentException("Token e usuário são obrigatórios.");
+    /**
+     * Registra sessão ativa vinculada ao IP/porta do socket que realizou o login.
+     * Token {@code adm} é registrado com chave composta, mas validado sem restrição de rede.
+     */
+    public void registrarToken(String token, String usuario, String ip, int porta) {
+        if (token == null || usuario == null || ip == null) {
+            throw new IllegalArgumentException("Token, usuário e IP são obrigatórios.");
         }
-        tokensAtivos.put(token, usuario);
+        if (!TOKEN_ADMIN.equals(token)) {
+            removerTokensPorLogin(usuario);
+        }
+        tokensAtivos.put(montarChaveToken(token, ip, porta), usuario);
     }
 
     /**
-     * Remove o token dos ativos. Retorna {@code true} se a entrada existia.
+     * Remove o token da sessão atual (mesmo IP/porta da conexão).
      */
-    public boolean removerToken(String token) {
-        return token != null && tokensAtivos.remove(token) != null;
+    public boolean removerToken(String token, String ip, int porta) {
+        if (token == null || ip == null) {
+            return false;
+        }
+        if (TOKEN_ADMIN.equals(token)) {
+            String chave = montarChaveToken(token, ip, porta);
+            if (tokensAtivos.remove(chave) != null) {
+                return true;
+            }
+            return existeUsuario(ADMIN_LOGIN);
+        }
+        return tokensAtivos.remove(montarChaveToken(token, ip, porta)) != null;
     }
 
-    /** Login associado ao token ativo, ou {@code null} se ausente ou token inválido. */
-    public String obterLoginPorToken(String token) {
-        if (token == null || token.isBlank()) {
+    /**
+     * Resolve o login se o token existir para o par IP/porta da conexão atual.
+     * Token {@code adm} aceita qualquer origem de rede (exceção para testes de admin).
+     */
+    public String obterLoginPorToken(String token, String ip, int porta) {
+        if (token == null || token.isBlank() || ip == null) {
             return null;
         }
-        return tokensAtivos.get(token);
+        if (TOKEN_ADMIN.equals(token)) {
+            return existeUsuario(ADMIN_LOGIN) ? ADMIN_LOGIN : null;
+        }
+        return tokensAtivos.get(montarChaveToken(token, ip, porta));
     }
 
     /** Remove o cadastro do usuário identificado pelo login. */

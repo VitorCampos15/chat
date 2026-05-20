@@ -3,6 +3,7 @@ package com.vitor.server.service;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.LoginRequest;
 import com.vitor.server.model.Usuario;
+import com.vitor.server.network.ClienteRede;
 import com.vitor.server.repository.UsuarioRepository;
 
 public class LoginService {
@@ -30,8 +31,9 @@ public class LoginService {
         return r;
     }
 
-    public GenericResponse processarLogin(LoginRequest request) {
-        if (request == null || isVazio(request.getUsuario()) || isVazio(request.getSenha())) {
+    public GenericResponse processarLogin(LoginRequest request, ClienteRede clienteRede) {
+        if (request == null || isVazio(request.getUsuario()) || isVazio(request.getSenha())
+                || clienteRede == null) {
             return loginErro401();
         }
 
@@ -45,7 +47,7 @@ public class LoginService {
                 ? TOKEN_ADMIN
                 : PREFIXO_TOKEN_USUARIO + login;
 
-        usuarioRepository.registrarToken(token, login);
+        usuarioRepository.registrarToken(token, login, clienteRede.ip(), clienteRede.porta());
 
         GenericResponse ok = new GenericResponse();
         ok.setResposta("200");

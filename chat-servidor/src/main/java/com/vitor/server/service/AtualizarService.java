@@ -3,10 +3,13 @@ package com.vitor.server.service;
 import com.vitor.server.model.AtualizarUsuarioRequest;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.Usuario;
+import com.vitor.server.network.ClienteRede;
 import com.vitor.server.repository.UsuarioRepository;
 import com.vitor.server.validation.ProtocoloValidacao;
 
 public class AtualizarService {
+
+    private static final String MSG_TOKEN_INVALIDO = "Token inválido";
 
     private final UsuarioRepository usuarioRepository;
 
@@ -14,11 +17,11 @@ public class AtualizarService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    private boolean validateToken(String token) {
-        if (token == null || token.isBlank()) {
+    private boolean validateToken(String token, ClienteRede clienteRede) {
+        if (token == null || token.isBlank() || clienteRede == null) {
             return false;
         }
-        return usuarioRepository.obterLoginPorToken(token) != null;
+        return usuarioRepository.obterLoginPorToken(token, clienteRede.ip(), clienteRede.porta()) != null;
     }
 
     private static boolean isVazio(String s) {
@@ -48,10 +51,10 @@ public class AtualizarService {
         return r;
     }
 
-    public GenericResponse processarAtualizacao(AtualizarUsuarioRequest request) {
+    public GenericResponse processarAtualizacao(AtualizarUsuarioRequest request, ClienteRede clienteRede) {
         String token = request != null ? request.getToken() : null;
-        if (!validateToken(token)) {
-            return resposta401("Token inválido");
+        if (!validateToken(token, clienteRede)) {
+            return resposta401(MSG_TOKEN_INVALIDO);
         }
 
         String erro = inputValidation(request);
@@ -59,10 +62,10 @@ public class AtualizarService {
             return resposta401(erro);
         }
 
-        String login = usuarioRepository.obterLoginPorToken(token);
+        String login = usuarioRepository.obterLoginPorToken(token, clienteRede.ip(), clienteRede.porta());
         Usuario cadastrado = usuarioRepository.buscarPorUsuario(login);
         if (cadastrado == null) {
-            return resposta401("Token inválido");
+            return resposta401(MSG_TOKEN_INVALIDO);
         }
 
         cadastrado.setNome(request.getNome());

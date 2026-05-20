@@ -2,6 +2,7 @@ package com.vitor.server.service;
 
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.LogoutRequest;
+import com.vitor.server.network.ClienteRede;
 import com.vitor.server.repository.UsuarioRepository;
 
 public class LogoutService {
@@ -31,11 +32,15 @@ public class LogoutService {
         return r;
     }
 
-    public GenericResponse processarLogout(LogoutRequest request) {
-        if (inputValidation(request) != null) {
+    public GenericResponse processarLogout(LogoutRequest request, ClienteRede clienteRede) {
+        if (inputValidation(request) != null || clienteRede == null) {
             return respostaLogoutFalhou();
         }
-        if (!usuarioRepository.removerToken(request.getToken())) {
+        String token = request.getToken();
+        if (usuarioRepository.obterLoginPorToken(token, clienteRede.ip(), clienteRede.porta()) == null) {
+            return respostaLogoutFalhou();
+        }
+        if (!usuarioRepository.removerToken(token, clienteRede.ip(), clienteRede.porta())) {
             return respostaLogoutFalhou();
         }
         GenericResponse ok = new GenericResponse();

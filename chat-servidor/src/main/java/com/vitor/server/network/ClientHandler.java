@@ -67,10 +67,12 @@ public class ClientHandler extends Thread {
                 PrintWriter out = new PrintWriter(
                         new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8), true)) {
 
+            ClienteRede clienteRede = extrairClienteRede();
+
             String linha;
             while ((linha = in.readLine()) != null) {
                 System.out.println("Recebido do cliente: " + linha);
-                processarLinha(linha, remoto, out);
+                processarLinha(linha, remoto, out, clienteRede);
             }
             System.out.println("[ClientHandler] Fim do stream (cliente desconectou ou fechou envio): " + remoto);
         } catch (IOException e) {
@@ -80,7 +82,13 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void processarLinha(String linha, String remoto, PrintWriter out) {
+    private ClienteRede extrairClienteRede() {
+        String ip = clientSocket.getInetAddress().getHostAddress();
+        int porta = clientSocket.getPort();
+        return new ClienteRede(ip, porta);
+    }
+
+    private void processarLinha(String linha, String remoto, PrintWriter out, ClienteRede clienteRede) {
         try {
             JsonNode root = MAPPER.readTree(linha);
             JsonNode opNode = root.get("op");
@@ -100,7 +108,7 @@ public class ClientHandler extends Thread {
                         + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
             } else if ("login".equals(op)) {
                 LoginRequest request = MAPPER.readValue(linha, LoginRequest.class);
-                GenericResponse resp = loginService.processarLogin(request);
+                GenericResponse resp = loginService.processarLogin(request, clienteRede);
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 System.out.println("[ClientHandler] OK login | cliente=" + remoto
@@ -108,14 +116,14 @@ public class ClientHandler extends Thread {
                         + (resp.getToken() != null ? " | token=(presente)" : " | mensagem=" + resp.getMensagem()));
             } else if ("logout".equals(op)) {
                 LogoutRequest request = MAPPER.readValue(linha, LogoutRequest.class);
-                GenericResponse resp = logoutService.processarLogout(request);
+                GenericResponse resp = logoutService.processarLogout(request, clienteRede);
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 System.out.println("[ClientHandler] OK logout | cliente=" + remoto
                         + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
             } else if ("consultarUsuario".equals(op)) {
                 ConsultaUsuarioRequest request = MAPPER.readValue(linha, ConsultaUsuarioRequest.class);
-                Object resp = consultaService.processarConsulta(request);
+                Object resp = consultaService.processarConsulta(request, clienteRede);
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 String resposta = extrairRespostaConsulta(resp);
@@ -123,14 +131,14 @@ public class ClientHandler extends Thread {
                         + " | resposta=" + resposta);
             } else if ("atualizarUsuario".equals(op)) {
                 AtualizarUsuarioRequest request = MAPPER.readValue(linha, AtualizarUsuarioRequest.class);
-                GenericResponse resp = atualizarService.processarAtualizacao(request);
+                GenericResponse resp = atualizarService.processarAtualizacao(request, clienteRede);
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 System.out.println("[ClientHandler] OK atualizarUsuario | cliente=" + remoto
                         + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
             } else if ("deletarUsuario".equals(op)) {
                 DeletarUsuarioRequest request = MAPPER.readValue(linha, DeletarUsuarioRequest.class);
-                GenericResponse resp = deletarService.processarExclusao(request);
+                GenericResponse resp = deletarService.processarExclusao(request, clienteRede);
                 String json = MAPPER.writeValueAsString(resp);
                 out.println(json);
                 System.out.println("[ClientHandler] OK deletarUsuario | cliente=" + remoto
