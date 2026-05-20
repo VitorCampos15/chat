@@ -1,0 +1,130 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+
+    <ui:define name="title">Painel Admin</ui:define>
+
+    <ui:define name="extraHead">
+        <style type="text/css">
+            .main-content { max-width: 52rem !important; }
+            .btn-atualizar-lista {
+                background: #1d4ed8 !important;
+                color: #fff !important;
+                border: 1px solid #1e40af !important;
+                padding: 0.5rem 1rem !important;
+                font-weight: 600 !important;
+                border-radius: 6px !important;
+                margin-bottom: 1rem;
+            }
+            .btn-atualizar-lista:hover { background: #1e40af !important; }
+            .tabela-usuarios {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 1.5rem;
+                font-size: 0.9rem;
+            }
+            .tabela-usuarios th,
+            .tabela-usuarios td {
+                border: 1px solid #cbd5e1;
+                padding: 0.5rem 0.75rem;
+                text-align: left;
+            }
+            .tabela-usuarios th {
+                background: #f1f5f9;
+                font-weight: 600;
+            }
+            .tabela-usuarios tr:nth-child(even) { background: #f8fafc; }
+            .painel-gerenciar {
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 1rem 1.25rem;
+                background: #f8fafc;
+            }
+            .painel-gerenciar h2 {
+                margin: 0 0 1rem;
+                font-size: 1.1rem;
+            }
+            .acoes-admin {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+            .btn-excluir-alvo {
+                background: #b91c1c !important;
+                color: #fff !important;
+                border: 1px solid #7f1d1d !important;
+                padding: 0.5rem 1rem !important;
+                font-weight: 600 !important;
+                border-radius: 6px !important;
+            }
+            .btn-excluir-alvo:hover { background: #991b1b !important; }
+            .lista-vazia {
+                color: #64748b;
+                font-size: 0.9rem;
+                margin-bottom: 1rem;
+            }
+        </style>
+    </ui:define>
+
+    <ui:define name="conteudo">
+        <h1>Painel do Administrador</h1>
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">
+            Use o token <strong>adm</strong> no campo &quot;Token Atual de Teste&quot; do cabeçalho.
+        </p>
+
+        <h:commandButton id="btnAtualizarLista" value="Atualizar Lista de Usuários"
+                         action="#{usuarioBean.carregarListaAdmin()}"
+                         styleClass="btn-atualizar-lista">
+            <f:ajax execute="@form" render="@form"/>
+        </h:commandButton>
+
+        <h:dataTable id="tabelaUsuarios" value="#{usuarioBean.listaUsuariosAdmin}" var="u"
+                     styleClass="tabela-usuarios" rendered="#{not empty usuarioBean.listaUsuariosAdmin}">
+            <h:column>
+                <f:facet name="header">Usuário</f:facet>
+                #{u.usuario}
+            </h:column>
+            <h:column>
+                <f:facet name="header">Nome</f:facet>
+                #{u.nome}
+            </h:column>
+        </h:dataTable>
+        <h:outputText value="Nenhum usuário na lista. Clique em &quot;Atualizar Lista de Usuários&quot;."
+                      styleClass="lista-vazia"
+                      rendered="#{empty usuarioBean.listaUsuariosAdmin}"/>
+
+        <section class="painel-gerenciar">
+            <h2>Gerenciar Usuário Selecionado</h2>
+            <div class="field">
+                <h:outputLabel for="usuarioAlvo" value="Usuário Alvo"/>
+                <h:inputText id="usuarioAlvo" value="#{usuarioBean.usuarioAlvo}" style="width: 100%;"/>
+            </div>
+            <div class="field">
+                <h:outputLabel for="nomeAlvo" value="Novo Nome"/>
+                <h:inputText id="nomeAlvo" value="#{usuarioBean.nomeAlvo}" style="width: 100%;"/>
+            </div>
+            <div class="field">
+                <h:outputLabel for="senhaAlvo" value="Nova Senha"/>
+                <h:inputSecret id="senhaAlvo" value="#{usuarioBean.senhaAlvo}" style="width: 100%;"/>
+            </div>
+            <div class="acoes-admin">
+                <h:commandButton id="btnBuscarAlvo" value="Buscar Detalhes"
+                                 action="#{usuarioBean.consultarAlvo()}">
+                    <f:ajax execute="@form" render="@form"/>
+                </h:commandButton>
+                <h:commandButton id="btnSalvarAlvo" value="Salvar Alterações"
+                                 action="#{usuarioBean.atualizarAlvo()}">
+                    <f:ajax execute="@form" render="@form"/>
+                </h:commandButton>
+                <h:commandButton id="btnExcluirAlvo" value="Excluir Conta do Usuário"
+                                 action="#{usuarioBean.deletarAlvo()}"
+                                 styleClass="btn-excluir-alvo">
+                    <f:ajax execute="@form" render="@form"/>
+                </h:commandButton>
+            </div>
+        </section>
+    </ui:define>
+</ui:composition>
