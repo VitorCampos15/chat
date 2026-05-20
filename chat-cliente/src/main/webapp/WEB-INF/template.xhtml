@@ -94,6 +94,7 @@
                 <h:link outcome="consulta" value="Consultar Usuário"/>
                 <h:link outcome="atualizar" value="Atualizar Perfil"/>
                 <h:link outcome="deletar" value="Excluir Conta"/>
+                <h:link outcome="admin" value="Painel Admin"/>
                 <h:commandLink id="linkSair" value="Sair" action="#{usuarioBean.realizarLogout()}"
                                styleClass="logout-form"/>
             </nav>
@@ -114,7 +115,9 @@
         <div class="page-body">
             <aside class="log-panel log-panel-enviado">
                 <h2>Último JSON Enviado</h2>
-                <h:outputText value="#{usuarioBean.jsonEnviado}" styleClass="log-json"/>
+                <h:panelGroup id="painelJsonEnviado" layout="block">
+                    <h:outputText id="txtJsonEnviado" value="#{usuarioBean.jsonEnviado}" styleClass="log-json"/>
+                </h:panelGroup>
             </aside>
             <main class="main-content">
                 <h:messages id="msgs" showSummary="true" showDetail="true" layout="list" styleClass="messages"/>
@@ -122,7 +125,9 @@
             </main>
             <aside class="log-panel log-panel-recebido">
                 <h2>Último JSON Recebido</h2>
-                <h:outputText value="#{usuarioBean.jsonRecebido}" styleClass="log-json"/>
+                <h:panelGroup id="painelJsonRecebido" layout="block">
+                    <h:outputText id="txtJsonRecebido" value="#{usuarioBean.jsonRecebido}" styleClass="log-json"/>
+                </h:panelGroup>
             </aside>
         </div>
     </h:form>

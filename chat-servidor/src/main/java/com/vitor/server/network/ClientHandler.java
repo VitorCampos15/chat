@@ -2,7 +2,11 @@ package com.vitor.server.network;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vitor.server.model.AtualizarUsuarioAdminRequest;
 import com.vitor.server.model.CadastroRequest;
+import com.vitor.server.model.ConsultarUsuarioAdminRequest;
+import com.vitor.server.model.ConsultarUsuariosAdminRequest;
+import com.vitor.server.model.DeletarUsuarioAdminRequest;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.LoginRequest;
 import com.vitor.server.model.LogoutRequest;
@@ -10,6 +14,7 @@ import com.vitor.server.model.AtualizarUsuarioRequest;
 import com.vitor.server.model.ConsultaUsuarioRequest;
 import com.vitor.server.model.DeletarUsuarioRequest;
 import com.vitor.server.model.ConsultaUsuarioResponse;
+import com.vitor.server.service.AdminService;
 import com.vitor.server.service.AtualizarService;
 import com.vitor.server.service.CadastroService;
 import com.vitor.server.service.DeletarService;
@@ -36,10 +41,12 @@ public class ClientHandler extends Thread {
     private final ConsultaService consultaService;
     private final AtualizarService atualizarService;
     private final DeletarService deletarService;
+    private final AdminService adminService;
 
     public ClientHandler(Socket clientSocket, CadastroService cadastroService, LoginService loginService,
                          LogoutService logoutService, ConsultaService consultaService,
-                         AtualizarService atualizarService, DeletarService deletarService) {
+                         AtualizarService atualizarService, DeletarService deletarService,
+                         AdminService adminService) {
         this.clientSocket = clientSocket;
         this.cadastroService = cadastroService;
         this.loginService = loginService;
@@ -47,6 +54,7 @@ public class ClientHandler extends Thread {
         this.consultaService = consultaService;
         this.atualizarService = atualizarService;
         this.deletarService = deletarService;
+        this.adminService = adminService;
     }
 
     @Override
@@ -127,6 +135,22 @@ public class ClientHandler extends Thread {
                 out.println(json);
                 System.out.println("[ClientHandler] OK deletarUsuario | cliente=" + remoto
                         + " | resposta=" + resp.getResposta() + " | mensagem=" + resp.getMensagem());
+            } else if ("consultarUsuariosAdmin".equals(op)) {
+                ConsultarUsuariosAdminRequest request = MAPPER.readValue(linha, ConsultarUsuariosAdminRequest.class);
+                Object resp = adminService.processarConsultarUsuariosAdmin(request);
+                enviarJsonAdmin(out, resp, op, remoto);
+            } else if ("consultarUsuarioAdmin".equals(op)) {
+                ConsultarUsuarioAdminRequest request = MAPPER.readValue(linha, ConsultarUsuarioAdminRequest.class);
+                Object resp = adminService.processarConsultarUsuarioAdmin(request);
+                enviarJsonAdmin(out, resp, op, remoto);
+            } else if ("atualizarUsuarioAdmin".equals(op)) {
+                AtualizarUsuarioAdminRequest request = MAPPER.readValue(linha, AtualizarUsuarioAdminRequest.class);
+                GenericResponse resp = adminService.processarAtualizarUsuarioAdmin(request);
+                enviarJsonAdmin(out, resp, op, remoto);
+            } else if ("deletarUsuarioAdmin".equals(op)) {
+                DeletarUsuarioAdminRequest request = MAPPER.readValue(linha, DeletarUsuarioAdminRequest.class);
+                GenericResponse resp = adminService.processarDeletarUsuarioAdmin(request);
+                enviarJsonAdmin(out, resp, op, remoto);
             } else {
                 System.err.println("[ClientHandler] ERRO: operação não suportada '" + op + "'. Cliente: " + remoto);
                 enviarJson(out, respostaErro("Operação não suportada: " + op));
@@ -162,6 +186,13 @@ public class ClientHandler extends Thread {
 
     private static void enviarJson(PrintWriter out, GenericResponse response) throws Exception {
         out.println(MAPPER.writeValueAsString(response));
+    }
+
+    private static void enviarJsonAdmin(PrintWriter out, Object response, String op, String remoto) throws Exception {
+        String json = MAPPER.writeValueAsString(response);
+        out.println(json);
+        System.out.println("[ClientHandler] Enviado ao cliente (" + op + "): " + json);
+        System.out.println("[ClientHandler] OK " + op + " | cliente=" + remoto);
     }
 
     private void fecharSocketComSeguranca(String remoto) {

@@ -2,6 +2,8 @@ package com.vitor.client.service;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vitor.client.model.AdminRequest;
+import com.vitor.client.model.AdminUsuariosResponse;
 import com.vitor.client.model.AtualizarUsuarioRequest;
 import com.vitor.client.model.CadastroRequest;
 import com.vitor.client.model.DeletarUsuarioRequest;
@@ -24,17 +26,6 @@ public class UsuarioService {
 
     @Inject
     private TcpClientService tcpService;
-
-    private String ultimoJsonEnviado;
-    private String ultimoJsonRecebido;
-
-    public String getUltimoJsonEnviado() {
-        return ultimoJsonEnviado;
-    }
-
-    public String getUltimoJsonRecebido() {
-        return ultimoJsonRecebido;
-    }
 
     public GenericResponse cadastrar(String nome, String user, String senha) {
         try {
@@ -119,10 +110,69 @@ public class UsuarioService {
         }
     }
 
+    public AdminUsuariosResponse listarUsuariosAdmin(String tokenAdmin) {
+        try {
+            AdminRequest request = new AdminRequest();
+            request.setOp("consultarUsuariosAdmin");
+            request.setTokenAdmin(tokenAdmin);
+
+            String json = MAPPER.writeValueAsString(request);
+            return enviarEInterpretar(json, AdminUsuariosResponse.class);
+        } catch (IOException e) {
+            return respostaErroAdminLista(e);
+        }
+    }
+
+    public ConsultaUsuarioPayload consultarUsuarioAdmin(String tokenAdmin, String usuarioAlvo) {
+        try {
+            AdminRequest request = new AdminRequest();
+            request.setOp("consultarUsuarioAdmin");
+            request.setTokenAdmin(tokenAdmin);
+            request.setUsuario(usuarioAlvo);
+
+            String json = MAPPER.writeValueAsString(request);
+            return enviarEInterpretar(json, ConsultaUsuarioPayload.class);
+        } catch (IOException e) {
+            return respostaErroConsulta(e);
+        }
+    }
+
+    public GenericResponse atualizarUsuarioAdmin(String tokenAdmin, String usuarioAlvo, String nome, String senha) {
+        try {
+            AdminRequest request = new AdminRequest();
+            request.setOp("atualizarUsuarioAdmin");
+            request.setTokenAdmin(tokenAdmin);
+            request.setUsuario(usuarioAlvo);
+            if (nome != null && !nome.isBlank()) {
+                request.setNome(nome);
+            }
+            if (senha != null && !senha.isBlank()) {
+                request.setSenha(senha);
+            }
+
+            String json = MAPPER.writeValueAsString(request);
+            return enviarEInterpretar(json, GenericResponse.class);
+        } catch (IOException e) {
+            return respostaErroGeneric(e);
+        }
+    }
+
+    public GenericResponse deletarUsuarioAdmin(String tokenAdmin, String usuarioAlvo) {
+        try {
+            AdminRequest request = new AdminRequest();
+            request.setOp("deletarUsuarioAdmin");
+            request.setTokenAdmin(tokenAdmin);
+            request.setUsuario(usuarioAlvo);
+
+            String json = MAPPER.writeValueAsString(request);
+            return enviarEInterpretar(json, GenericResponse.class);
+        } catch (IOException e) {
+            return respostaErroGeneric(e);
+        }
+    }
+
     private <T> T enviarEInterpretar(String json, Class<T> tipoResposta) throws IOException {
-        ultimoJsonEnviado = json;
         String linha = tcpService.sendRequest(json);
-        ultimoJsonRecebido = linha;
         return MAPPER.readValue(linha, tipoResposta);
     }
 
@@ -142,9 +192,17 @@ public class UsuarioService {
         return erro;
     }
 
+    private AdminUsuariosResponse respostaErroAdminLista(IOException e) {
+        registrarJsonRecebidoEmFalha(e);
+        AdminUsuariosResponse erro = new AdminUsuariosResponse();
+        erro.setResposta("erro");
+        erro.setMensagem(e.getMessage());
+        return erro;
+    }
+
     private void registrarJsonRecebidoEmFalha(IOException e) {
-        if (ultimoJsonRecebido == null) {
-            ultimoJsonRecebido = e.getMessage();
+        if (tcpService.getUltimoJsonRecebido() == null) {
+            tcpService.setUltimoJsonRecebido(e.getMessage());
         }
     }
 }

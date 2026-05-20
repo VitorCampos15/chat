@@ -27,6 +27,9 @@ public class TcpClientService implements Serializable {
     private String lastConnectedIp;
     private int lastConnectedPort = -1;
 
+    private String ultimoJsonEnviado;
+    private String ultimoJsonRecebido;
+
     private transient Socket socket;
     private transient PrintWriter out;
     private transient BufferedReader in;
@@ -45,8 +48,21 @@ public class TcpClientService implements Serializable {
         }
     }
 
+    public String getUltimoJsonEnviado() {
+        return ultimoJsonEnviado;
+    }
+
+    public String getUltimoJsonRecebido() {
+        return ultimoJsonRecebido;
+    }
+
+    public void setUltimoJsonRecebido(String ultimoJsonRecebido) {
+        this.ultimoJsonRecebido = ultimoJsonRecebido;
+    }
+
     public String sendRequest(String json) throws IOException {
         synchronized (this) {
+            ultimoJsonEnviado = json;
             fecharSeEndpointMudou();
             conectarSeNecessario();
             try {
@@ -56,9 +72,13 @@ public class TcpClientService implements Serializable {
                     fecharRecursos();
                     throw new IOException("O servidor fechou a conexão inesperadamente.");
                 }
+                ultimoJsonRecebido = line;
                 return line;
             } catch (IOException e) {
                 fecharRecursos();
+                if (ultimoJsonRecebido == null) {
+                    ultimoJsonRecebido = e.getMessage();
+                }
                 throw e;
             }
         }

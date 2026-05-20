@@ -2,6 +2,7 @@ package com.vitor.server.core;
 
 import com.vitor.server.network.ClientHandler;
 import com.vitor.server.repository.UsuarioRepository;
+import com.vitor.server.service.AdminService;
 import com.vitor.server.service.AtualizarService;
 import com.vitor.server.service.CadastroService;
 import com.vitor.server.service.DeletarService;
@@ -26,6 +27,7 @@ public final class ServerMain {
     private static final ConsultaService CONSULTA_SERVICE = new ConsultaService(REPOSITORIO_USUARIOS);
     private static final AtualizarService ATUALIZAR_SERVICE = new AtualizarService(REPOSITORIO_USUARIOS);
     private static final DeletarService DELETAR_SERVICE = new DeletarService(REPOSITORIO_USUARIOS);
+    private static final AdminService ADMIN_SERVICE = new AdminService(REPOSITORIO_USUARIOS);
 
     private ServerMain() {
     }
@@ -44,7 +46,7 @@ public final class ServerMain {
                 System.out.println("Accept ativado. Nova conexão de "
                         + clientSocket.getRemoteSocketAddress());
                 new ClientHandler(clientSocket, CADASTRO_SERVICE, LOGIN_SERVICE, LOGOUT_SERVICE,
-                        CONSULTA_SERVICE, ATUALIZAR_SERVICE, DELETAR_SERVICE).start();
+                        CONSULTA_SERVICE, ATUALIZAR_SERVICE, DELETAR_SERVICE, ADMIN_SERVICE).start();
             }
         } catch (IOException e) {
             System.err.println("Falha no accept ou no ServerSocket: " + e.getMessage());

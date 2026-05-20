@@ -2,6 +2,8 @@ package com.vitor.server.repository;
 
 import com.vitor.server.model.Usuario;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -69,5 +71,18 @@ public class UsuarioRepository {
         if (login != null) {
             usuariosPorLogin.remove(login);
         }
+    }
+
+    /** Lista todos os usuários cadastrados (cópia defensiva). */
+    public List<Usuario> listarTodosUsuarios() {
+        return new ArrayList<>(usuariosPorLogin.values());
+    }
+
+    /** Remove todos os tokens ativos associados ao login informado (logout forçado). */
+    public void removerTokensPorLogin(String login) {
+        if (login == null) {
+            return;
+        }
+        tokensAtivos.entrySet().removeIf(entry -> login.equals(entry.getValue()));
     }
 }
