@@ -29,7 +29,7 @@ public class UsuarioBean implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final String DESTINO_TODOS = "todos";
+    private static final String DESTINO_TODOS = "/todos";
 
     @Inject
     private TcpClientService tcpClientService;
@@ -244,7 +244,8 @@ public class UsuarioBean implements Serializable {
         }
         try {
             aplicarServidorTcp();
-            GenericResponse resp = usuarioService.enviarMensagem(tokenRecebido, textoMensagem.trim(), destinatario.trim());
+            String destino = normalizarDestinatario(destinatario.trim());
+            GenericResponse resp = usuarioService.enviarMensagem(tokenRecebido, textoMensagem.trim(), destino);
             registrarJsonsDaUltimaChamada();
             if (resp == null) {
                 ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
@@ -288,11 +289,29 @@ public class UsuarioBean implements Serializable {
         }
         String de = msg.getDe() != null ? msg.getDe() : "?";
         String para = msg.getPara() != null ? msg.getPara() : "?";
-        if (DESTINO_TODOS.equalsIgnoreCase(para.trim())) {
+        if (isDestinoTodos(para)) {
             para = "Todos";
         }
         String texto = msg.getMensagem() != null ? msg.getMensagem() : "";
         return "[" + de + " para " + para + "]: " + texto;
+    }
+
+    private static String normalizarDestinatario(String destino) {
+        if (destino == null || destino.isBlank()) {
+            return destino;
+        }
+        if ("todos".equalsIgnoreCase(destino.trim())) {
+            return DESTINO_TODOS;
+        }
+        return destino.trim();
+    }
+
+    private static boolean isDestinoTodos(String para) {
+        if (para == null) {
+            return false;
+        }
+        String valor = para.trim();
+        return DESTINO_TODOS.equals(valor) || "todos".equalsIgnoreCase(valor);
     }
 
     public void carregarListaAdmin() {

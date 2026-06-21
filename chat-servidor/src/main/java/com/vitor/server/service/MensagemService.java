@@ -12,7 +12,7 @@ import com.vitor.server.repository.UsuarioRepository;
 public class MensagemService {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final String DESTINO_TODOS = "todos";
+    private static final String DESTINO_TODOS = "/todos";
     private static final String MSG_TOKEN_INVALIDO = "Token inválido";
 
     private final UsuarioRepository usuarioRepository;
@@ -47,14 +47,17 @@ public class MensagemService {
             MensagemEvent evento = new MensagemEvent();
             evento.setResposta("200");
             evento.setDe(remetente);
-            evento.setPara(para.trim());
             evento.setMensagem(texto.trim());
-            String jsonEvento = MAPPER.writeValueAsString(evento);
+            String jsonEvento;
 
-            if (DESTINO_TODOS.equalsIgnoreCase(para.trim())) {
+            if (isBroadcast(para)) {
+                evento.setPara(DESTINO_TODOS);
+                jsonEvento = MAPPER.writeValueAsString(evento);
                 conexaoManager.enviarMensagemParaTodos(jsonEvento);
             } else {
                 String destino = para.trim();
+                evento.setPara(destino);
+                jsonEvento = MAPPER.writeValueAsString(evento);
                 if (!usuarioRepository.existeUsuario(destino)) {
                     return respostaErro("Destinatário não encontrado.");
                 }
@@ -71,6 +74,14 @@ public class MensagemService {
         } catch (Exception e) {
             return respostaErro("Falha ao enviar mensagem.");
         }
+    }
+
+    private static boolean isBroadcast(String para) {
+        if (para == null) {
+            return false;
+        }
+        String valor = para.trim();
+        return DESTINO_TODOS.equals(valor) || "todos".equalsIgnoreCase(valor);
     }
 
     private static GenericResponse respostaErro(String mensagem) {

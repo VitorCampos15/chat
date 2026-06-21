@@ -47,7 +47,7 @@ public class MensagemDTO implements Serializable {
 
     public String getTextoExibicao(String meuUsuario) {
         String destinoExibicao;
-        if (para != null && "todos".equalsIgnoreCase(para.trim())) {
+        if (para != null && ("/todos".equals(para.trim()) || "todos".equalsIgnoreCase(para.trim()))) {
             destinoExibicao = "Todos";
         } else if (meuUsuario != null && meuUsuario.equals(para)) {
             destinoExibicao = "Você";
