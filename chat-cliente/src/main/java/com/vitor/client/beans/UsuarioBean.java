@@ -1,9 +1,13 @@
 package com.vitor.client.beans;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vitor.client.model.AdminUsuariosResponse;
 import com.vitor.client.model.ConsultaUsuarioPayload;
 import com.vitor.client.model.GenericResponse;
+import com.vitor.client.model.MensagemDTO;
+import com.vitor.client.model.MensagemEvent;
 import com.vitor.client.model.UsuarioDTO;
+import com.vitor.client.model.UsuariosLogadosResponse;
 import com.vitor.client.network.TcpClientService;
 import com.vitor.client.service.UsuarioService;
 import jakarta.faces.application.FacesMessage;
@@ -23,6 +27,9 @@ public class UsuarioBean implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String DESTINO_TODOS = "todos";
 
     @Inject
     private TcpClientService tcpClientService;
@@ -49,6 +56,11 @@ public class UsuarioBean implements Serializable {
     private String usuarioAlvo;
     private String nomeAlvo;
     private String senhaAlvo;
+    private List<String> usuariosLogados = new ArrayList<>();
+    private List<MensagemDTO> historicoMensagens = new ArrayList<>();
+    private String usuarioLogado;
+    private String textoMensagem;
+    private String destinatario;
 
     public void executarCadastro() {
         FacesContext ctx = FacesContext.getCurrentInstance();
@@ -81,6 +93,9 @@ public class UsuarioBean implements Serializable {
             }
             if ("200".equals(resp.getResposta()) && resp.getToken() != null && !resp.getToken().isBlank()) {
                 tokenRecebido = resp.getToken();
+                usuarioLogado = usuario;
+                tcpClientService.setPushHandler(this::processarPushServidor);
+                tcpClientService.iniciarOuvinte();
             }
             aplicarMensagemProtocolo(ctx, resp);
         } catch (NumberFormatException e) {
@@ -197,6 +212,7 @@ public class UsuarioBean implements Serializable {
 
     /** Limpa token e dados de formulário; mantém a sessão (ex.: IP/porta em ConfiguracaoBean). */
     private void limparEstadoAposLogout() {
+        tcpClientService.pararOuvinte();
         tokenRecebido = null;
         nome = null;
         usuario = null;
@@ -205,6 +221,78 @@ public class UsuarioBean implements Serializable {
         usuarioConsulta = null;
         novoNome = null;
         novaSenha = null;
+        usuariosLogados.clear();
+        historicoMensagens.clear();
+        usuarioLogado = null;
+        textoMensagem = null;
+        destinatario = null;
+    }
+
+    public void enviarMensagem() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (tokenRecebido == null || tokenRecebido.isBlank()) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Faça login para enviar mensagens."));
+            return;
+        }
+        if (textoMensagem == null || textoMensagem.isBlank()) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Digite uma mensagem."));
+            return;
+        }
+        if (destinatario == null || destinatario.isBlank()) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Digite o nome do destinatário."));
+            return;
+        }
+        try {
+            aplicarServidorTcp();
+            GenericResponse resp = usuarioService.enviarMensagem(tokenRecebido, textoMensagem.trim(), destinatario.trim());
+            registrarJsonsDaUltimaChamada();
+            if (resp == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
+                return;
+            }
+            if ("200".equals(resp.getResposta())) {
+                textoMensagem = null;
+                return;
+            }
+            aplicarMensagemProtocolo(ctx, resp);
+        } catch (NumberFormatException e) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida",
+                    "Informe um número inteiro válido na barra superior."));
+        }
+    }
+
+    private synchronized void processarPushServidor(String json) {
+        jsonRecebido = json;
+        try {
+            if (json.contains("\"usuarios_logados\"")) {
+                UsuariosLogadosResponse resp = MAPPER.readValue(json, UsuariosLogadosResponse.class);
+                if (resp.getUsuariosLogados() != null) {
+                    usuariosLogados = new ArrayList<>(resp.getUsuariosLogados());
+                } else {
+                    usuariosLogados.clear();
+                }
+                return;
+            }
+            MensagemEvent evento = MAPPER.readValue(json, MensagemEvent.class);
+            if (evento.getMensagem() != null) {
+                historicoMensagens.add(new MensagemDTO(evento.getDe(), evento.getPara(), evento.getMensagem()));
+            }
+        } catch (Exception ignored) {
+            // Mantém jsonRecebido atualizado para auditoria mesmo em JSON não mapeado.
+        }
+    }
+
+    public String formatarMensagem(MensagemDTO msg) {
+        if (msg == null) {
+            return "";
+        }
+        String de = msg.getDe() != null ? msg.getDe() : "?";
+        String para = msg.getPara() != null ? msg.getPara() : "?";
+        if (DESTINO_TODOS.equalsIgnoreCase(para.trim())) {
+            para = "Todos";
+        }
+        String texto = msg.getMensagem() != null ? msg.getMensagem() : "";
+        return "[" + de + " para " + para + "]: " + texto;
     }
 
     public void carregarListaAdmin() {
@@ -321,6 +409,8 @@ public class UsuarioBean implements Serializable {
 
     public void desconectarTcp() {
         tcpClientService.disconnect();
+        usuariosLogados.clear();
+        historicoMensagens.clear();
         FacesContext.getCurrentInstance().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_INFO, "TCP", "Conexão com o servidor encerrada."));
     }
@@ -465,5 +555,48 @@ public class UsuarioBean implements Serializable {
 
     public void setSenhaAlvo(String senhaAlvo) {
         this.senhaAlvo = senhaAlvo;
+    }
+
+    public List<String> getUsuariosLogados() {
+        return usuariosLogados;
+    }
+
+    public void setUsuariosLogados(List<String> usuariosLogados) {
+        this.usuariosLogados = usuariosLogados != null ? usuariosLogados : new ArrayList<>();
+    }
+
+    public List<MensagemDTO> getHistoricoMensagens() {
+        if (historicoMensagens == null) {
+            return new ArrayList<>();
+        }
+        return historicoMensagens;
+    }
+
+    public void setHistoricoMensagens(List<MensagemDTO> historicoMensagens) {
+        this.historicoMensagens = historicoMensagens != null ? historicoMensagens : new ArrayList<>();
+    }
+
+    public String getUsuarioLogado() {
+        return usuarioLogado;
+    }
+
+    public void setUsuarioLogado(String usuarioLogado) {
+        this.usuarioLogado = usuarioLogado;
+    }
+
+    public String getTextoMensagem() {
+        return textoMensagem;
+    }
+
+    public void setTextoMensagem(String textoMensagem) {
+        this.textoMensagem = textoMensagem;
+    }
+
+    public String getDestinatario() {
+        return destinatario;
+    }
+
+    public void setDestinatario(String destinatario) {
+        this.destinatario = destinatario;
     }
 }

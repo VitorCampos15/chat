@@ -1,0 +1,161 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+
+    <ui:define name="title">Mensagens</ui:define>
+
+    <ui:define name="extraHead">
+        <style type="text/css">
+            .main-content { max-width: none; width: 100%; }
+            .chat-layout {
+                display: grid;
+                grid-template-columns: minmax(10rem, 1fr) minmax(16rem, 2fr) minmax(10rem, 1fr);
+                gap: 1rem;
+                width: 100%;
+                min-height: 28rem;
+            }
+            .chat-col {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                min-width: 0;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 0.75rem;
+                background: #f8fafc;
+                box-sizing: border-box;
+            }
+            .chat-col h2 {
+                margin: 0;
+                font-size: 0.95rem;
+                color: #334155;
+            }
+            .chat-contatos ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .chat-contatos li {
+                padding: 0.35rem 0.5rem;
+                border-radius: 4px;
+                margin-bottom: 0.25rem;
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                font-size: 0.9rem;
+            }
+            .chat-historico {
+                min-height: 16rem;
+                max-height: calc(100vh - 18rem);
+                overflow-y: auto;
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 0.75rem;
+            }
+            .chat-linha-msg {
+                display: block;
+                margin: 0 0 0.5rem 0;
+                font-size: 0.9rem;
+                line-height: 1.45;
+                word-break: break-word;
+            }
+            .chat-historico .vazio {
+                color: #64748b;
+                font-style: italic;
+                margin: 0;
+            }
+            .chat-input-row {
+                display: flex;
+                gap: 0.5rem;
+                align-items: stretch;
+                margin-top: 0.75rem;
+            }
+            .chat-input-row input[type="text"] {
+                flex: 1;
+                padding: 0.5rem;
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+            }
+            .chat-acoes label {
+                display: block;
+                margin-bottom: 0.35rem;
+                font-size: 0.85rem;
+                color: #475569;
+            }
+            .chat-acoes input[type="text"] {
+                width: 100%;
+                padding: 0.45rem;
+                border: 1px solid #cbd5e1;
+                border-radius: 6px;
+                margin-bottom: 0.75rem;
+                box-sizing: border-box;
+            }
+            @media (max-width: 900px) {
+                .chat-layout { grid-template-columns: 1fr; }
+            }
+        </style>
+    </ui:define>
+
+    <ui:define name="conteudo">
+        <h1>Mensagens</h1>
+        <p>Feed unificado de mensagens — digite o destinatário à direita e envie.</p>
+
+        <div class="chat-layout">
+            <section class="chat-col chat-contatos">
+                <h2>Contatos online</h2>
+                <h:panelGroup id="painelContatos" layout="block">
+                    <ul>
+                        <ui:repeat value="#{usuarioBean.usuariosLogados}" var="login">
+                            <li>
+                                #{login}
+                                <h:outputText value=" (você)" rendered="#{login eq usuarioBean.usuarioLogado}"/>
+                            </li>
+                        </ui:repeat>
+                    </ul>
+                    <h:outputText value="Nenhum usuário logado." styleClass="vazio"
+                                  rendered="#{empty usuarioBean.usuariosLogados}"/>
+                </h:panelGroup>
+            </section>
+
+            <section class="chat-col chat-central">
+                <h2>Conversa</h2>
+                <h:panelGroup id="painelHistorico" layout="block" styleClass="chat-historico">
+                    <h:panelGroup id="listaHistorico" layout="block">
+                        <ui:repeat value="#{usuarioBean.historicoMensagens}" var="msg">
+                            <h:outputText value="#{usuarioBean.formatarMensagem(msg)}" styleClass="chat-linha-msg"/>
+                        </ui:repeat>
+                        <h:outputText value="Nenhuma mensagem ainda." styleClass="vazio"
+                                      rendered="#{empty usuarioBean.historicoMensagens}"/>
+                    </h:panelGroup>
+                </h:panelGroup>
+                <h:panelGroup id="painelEntradaMensagem" layout="block" styleClass="chat-input-row">
+                    <h:inputText id="inputMensagem" value="#{usuarioBean.textoMensagem}"
+                                 placeholder="Digite sua mensagem..."/>
+                    <h:commandButton id="btnEnviar" value="Enviar" action="#{usuarioBean.enviarMensagem()}">
+                        <f:ajax execute="painelEntradaMensagem inputDestinatario"
+                                render="painelHistorico listaHistorico :formPrincipal:painelJsonEnviado :formPrincipal:txtJsonEnviado :formPrincipal:painelJsonRecebido :formPrincipal:txtJsonRecebido"/>
+                    </h:commandButton>
+                </h:panelGroup>
+            </section>
+
+            <section class="chat-col chat-acoes">
+                <h2>Destinatário</h2>
+                <h:panelGroup id="painelDestino" layout="block">
+                    <h:outputLabel for="inputDestinatario" value="Enviar para"/>
+                    <h:inputText id="inputDestinatario" value="#{usuarioBean.destinatario}"
+                                 placeholder="Nome de usuário ou todos"/>
+                    <p style="font-size:0.85rem;color:#64748b;margin:0;">
+                        Digite o login do destinatário ou <strong>todos</strong> para broadcast.
+                    </p>
+                </h:panelGroup>
+            </section>
+        </div>
+
+        <h:commandButton id="btnPollMensagens" value="" style="display:none;">
+            <f:ajax execute="@this"
+                    render=":formPrincipal:painelContatos :formPrincipal:painelHistorico :formPrincipal:listaHistorico :formPrincipal:painelJsonEnviado :formPrincipal:txtJsonEnviado :formPrincipal:painelJsonRecebido :formPrincipal:txtJsonRecebido"/>
+        </h:commandButton>
+    </ui:define>
+</ui:composition>

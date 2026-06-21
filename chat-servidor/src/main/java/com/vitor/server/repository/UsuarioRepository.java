@@ -3,8 +3,10 @@ package com.vitor.server.repository;
 import com.vitor.server.model.Usuario;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UsuarioRepository {
@@ -112,5 +114,37 @@ public class UsuarioRepository {
             return;
         }
         tokensAtivos.entrySet().removeIf(entry -> login.equals(entry.getValue()));
+    }
+
+    /** Remove todas as sessões ativas vinculadas ao par IP/porta da conexão. */
+    public void removerTokensPorRede(String ip, int porta) {
+        if (ip == null) {
+            return;
+        }
+        String sufixo = SEPARADOR_CHAVE + ip + SEPARADOR_CHAVE + porta;
+        tokensAtivos.entrySet().removeIf(entry -> entry.getKey().endsWith(sufixo));
+    }
+
+    /** Lista os logins com sessão ativa (sem duplicatas, ordem de inserção). */
+    public List<String> listarLoginsAtivos() {
+        Set<String> unicos = new LinkedHashSet<>(tokensAtivos.values());
+        return new ArrayList<>(unicos);
+    }
+
+    /** Lista sessões ativas com usuário, IP e porta para exibição na interface gráfica. */
+    public List<String[]> listarSessoesAtivasDetalhadas() {
+        List<String[]> dados = new ArrayList<>();
+        for (Map.Entry<String, String> entry : tokensAtivos.entrySet()) {
+            String chave = entry.getKey();
+            int firstSep = chave.indexOf(SEPARADOR_CHAVE);
+            int lastSep = chave.lastIndexOf(SEPARADOR_CHAVE);
+            if (firstSep < 0 || lastSep <= firstSep) {
+                continue;
+            }
+            String ip = chave.substring(firstSep + 1, lastSep);
+            String porta = chave.substring(lastSep + 1);
+            dados.add(new String[]{entry.getValue(), ip, porta});
+        }
+        return dados;
     }
 }

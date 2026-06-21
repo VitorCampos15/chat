@@ -1,15 +1,20 @@
 package com.vitor.server.core;
 
 import com.vitor.server.network.ClientHandler;
+import com.vitor.server.network.ConexaoManager;
 import com.vitor.server.repository.UsuarioRepository;
 import com.vitor.server.service.AdminService;
 import com.vitor.server.service.AtualizarService;
 import com.vitor.server.service.CadastroService;
 import com.vitor.server.service.DeletarService;
 import com.vitor.server.service.ConsultaService;
+import com.vitor.server.service.ListarUsuariosLogadosService;
 import com.vitor.server.service.LoginService;
 import com.vitor.server.service.LogoutService;
+import com.vitor.server.service.MensagemService;
+import com.vitor.server.ui.ServerWindow;
 
+import javax.swing.SwingUtilities;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,26 +22,33 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public final class ServerMain {
-    
-    private static final int PORTA_PADRAO = 5555;
 
-    private static final UsuarioRepository REPOSITORIO_USUARIOS = new UsuarioRepository();
-    private static final CadastroService CADASTRO_SERVICE = new CadastroService(REPOSITORIO_USUARIOS);
-    private static final LoginService LOGIN_SERVICE = new LoginService(REPOSITORIO_USUARIOS);
-    private static final LogoutService LOGOUT_SERVICE = new LogoutService(REPOSITORIO_USUARIOS);
-    private static final ConsultaService CONSULTA_SERVICE = new ConsultaService(REPOSITORIO_USUARIOS);
-    private static final AtualizarService ATUALIZAR_SERVICE = new AtualizarService(REPOSITORIO_USUARIOS);
-    private static final DeletarService DELETAR_SERVICE = new DeletarService(REPOSITORIO_USUARIOS);
-    private static final AdminService ADMIN_SERVICE = new AdminService(REPOSITORIO_USUARIOS);
+    private static final int PORTA_PADRAO = 5555;
 
     private ServerMain() {
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         int porta = resolverPorta(args);
 
         System.out.println("Servidor carregado na porta " + porta);
         System.out.println("Aguardando conexão...\n");
+
+        ServerWindow window = new ServerWindow(porta);
+        SwingUtilities.invokeAndWait(() -> window.setVisible(true));
+
+        UsuarioRepository repositorioUsuarios = new UsuarioRepository();
+        ConexaoManager conexaoManager = new ConexaoManager(repositorioUsuarios, window);
+        CadastroService cadastroService = new CadastroService(repositorioUsuarios);
+        LoginService loginService = new LoginService(repositorioUsuarios);
+        LogoutService logoutService = new LogoutService(repositorioUsuarios);
+        ConsultaService consultaService = new ConsultaService(repositorioUsuarios);
+        AtualizarService atualizarService = new AtualizarService(repositorioUsuarios);
+        DeletarService deletarService = new DeletarService(repositorioUsuarios);
+        AdminService adminService = new AdminService(repositorioUsuarios);
+        ListarUsuariosLogadosService listarUsuariosLogadosService =
+                new ListarUsuariosLogadosService(repositorioUsuarios, conexaoManager);
+        MensagemService mensagemService = new MensagemService(repositorioUsuarios, conexaoManager);
 
         ServerSocket serverSocket = new ServerSocket(porta);
         try {
@@ -45,8 +57,10 @@ public final class ServerMain {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Accept ativado. Nova conexão de "
                         + clientSocket.getRemoteSocketAddress());
-                new ClientHandler(clientSocket, CADASTRO_SERVICE, LOGIN_SERVICE, LOGOUT_SERVICE,
-                        CONSULTA_SERVICE, ATUALIZAR_SERVICE, DELETAR_SERVICE, ADMIN_SERVICE).start();
+                new ClientHandler(clientSocket, cadastroService, loginService, logoutService,
+                        consultaService, atualizarService, deletarService, adminService,
+                        listarUsuariosLogadosService, mensagemService, conexaoManager,
+                        repositorioUsuarios, window).start();
             }
         } catch (IOException e) {
             System.err.println("Falha no accept ou no ServerSocket: " + e.getMessage());

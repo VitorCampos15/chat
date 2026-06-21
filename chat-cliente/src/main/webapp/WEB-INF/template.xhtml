@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
       xmlns:ui="jakarta.faces.facelets">
 
 <h:head>
@@ -92,6 +93,7 @@
                 <h:link outcome="login" value="Login"/>
                 <h:link outcome="cadastro" value="Cadastro"/>
                 <h:link outcome="consulta" value="Consultar Usuário"/>
+                <h:link outcome="mensagens" value="Mensagens"/>
                 <h:link outcome="atualizar" value="Atualizar Perfil"/>
                 <h:link outcome="deletar" value="Excluir Conta"/>
                 <h:link outcome="admin" value="Painel Admin"/>
@@ -131,5 +133,25 @@
             </aside>
         </div>
     </h:form>
+
+    <h:form id="pollForm" style="display:none;">
+        <h:commandButton id="btnPoll" value="">
+            <f:ajax execute="@this"
+                    render=":formPrincipal:painelJsonEnviado :formPrincipal:txtJsonEnviado :formPrincipal:painelJsonRecebido :formPrincipal:txtJsonRecebido"/>
+        </h:commandButton>
+    </h:form>
+
+    <script type="text/javascript">
+        setInterval(function () {
+            var btnPoll = document.getElementById('pollForm:btnPoll');
+            if (btnPoll) {
+                btnPoll.click();
+            }
+            var btnPollMensagens = document.getElementById('formPrincipal:btnPollMensagens');
+            if (btnPollMensagens) {
+                btnPollMensagens.click();
+            }
+        }, 1000);
+    </script>
 </h:body>
 </html>

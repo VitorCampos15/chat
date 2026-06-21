@@ -7,6 +7,7 @@ import com.vitor.client.model.AdminUsuariosResponse;
 import com.vitor.client.model.AtualizarUsuarioRequest;
 import com.vitor.client.model.CadastroRequest;
 import com.vitor.client.model.DeletarUsuarioRequest;
+import com.vitor.client.model.EnviarMensagemRequest;
 import com.vitor.client.model.ConsultaUsuarioRequest;
 import com.vitor.client.model.ConsultaUsuarioPayload;
 import com.vitor.client.model.GenericResponse;
@@ -163,6 +164,21 @@ public class UsuarioService {
             request.setOp("deletarUsuarioAdmin");
             request.setTokenAdmin(tokenAdmin);
             request.setUsuario(usuarioAlvo);
+
+            String json = MAPPER.writeValueAsString(request);
+            return enviarEInterpretar(json, GenericResponse.class);
+        } catch (IOException e) {
+            return respostaErroGeneric(e);
+        }
+    }
+
+    public GenericResponse enviarMensagem(String token, String mensagem, String para) {
+        try {
+            EnviarMensagemRequest request = new EnviarMensagemRequest();
+            request.setOp("enviarMensagem");
+            request.setToken(token);
+            request.setMensagem(mensagem);
+            request.setPara(para);
 
             String json = MAPPER.writeValueAsString(request);
             return enviarEInterpretar(json, GenericResponse.class);
