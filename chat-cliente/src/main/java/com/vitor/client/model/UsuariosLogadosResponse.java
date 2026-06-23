@@ -16,6 +16,6 @@ public class UsuariosLogadosResponse {
     @JsonProperty("mensagem")
     private String mensagem;
 
-    @JsonProperty("usuarios_logados")
+    @JsonProperty("lista_usuarios")
     private List<String> usuariosLogados;
 }

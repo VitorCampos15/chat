@@ -198,14 +198,31 @@ public class TcpClientService implements Serializable {
         }
         try {
             JsonNode root = MAPPER.readTree(json);
-            if (root.has("usuarios_logados")) {
+            if (isListaUsuariosOnlinePush(root)) {
                 return true;
             }
-            return root.has("mensagem") && root.has("de") && root.has("para");
+            return root.has("mensagem") && root.has("de") && root.has("destinatario");
         } catch (Exception ignored) {
-            return json.contains("\"usuarios_logados\"")
-                    || (json.contains("\"mensagem\"") && json.contains("\"de\""));
+            return (json.contains("\"lista_usuarios\"")
+                    && !json.contains("\"usuario\""))
+                    || (json.contains("\"mensagem\"") && json.contains("\"de\"")
+                    && json.contains("\"destinatario\""));
         }
+    }
+
+    /** Distingue push de logados (strings) da resposta admin (objetos com usuario/nome). */
+    private static boolean isListaUsuariosOnlinePush(JsonNode root) {
+        if (!root.has("lista_usuarios")) {
+            return false;
+        }
+        JsonNode lista = root.get("lista_usuarios");
+        if (!lista.isArray()) {
+            return false;
+        }
+        if (lista.isEmpty()) {
+            return true;
+        }
+        return lista.get(0).isTextual();
     }
 
     private void fecharSeEndpointMudou() {

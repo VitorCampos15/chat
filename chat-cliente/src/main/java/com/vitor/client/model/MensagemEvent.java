@@ -20,8 +20,8 @@ public class MensagemEvent implements Serializable {
     @JsonProperty("de")
     private String de;
 
-    @JsonProperty("para")
-    private String para;
+    @JsonProperty("destinatario")
+    private String destinatario;
 
     @JsonProperty("mensagem")
     private String mensagem;

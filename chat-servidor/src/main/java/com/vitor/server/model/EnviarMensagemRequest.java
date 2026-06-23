@@ -15,6 +15,6 @@ public class EnviarMensagemRequest {
     @JsonProperty("mensagem")
     private String mensagem;
 
-    @JsonProperty("para")
-    private String para;
+    @JsonProperty("destinatario")
+    private String destinatario;
 }

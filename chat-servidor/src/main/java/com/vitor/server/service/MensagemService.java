@@ -26,7 +26,7 @@ public class MensagemService {
     public Object processarEnvio(EnviarMensagemRequest request, ClienteRede clienteRede, ClientHandler remetenteHandler) {
         String token = request != null ? request.getToken() : null;
         String texto = request != null ? request.getMensagem() : null;
-        String para = request != null ? request.getPara() : null;
+        String para = request != null ? request.getDestinatario() : null;
 
         if (token == null || token.isBlank() || clienteRede == null) {
             return respostaErro(MSG_TOKEN_INVALIDO);
@@ -51,12 +51,12 @@ public class MensagemService {
             String jsonEvento;
 
             if (isBroadcast(para)) {
-                evento.setPara(DESTINO_TODOS);
+                evento.setDestinatario(DESTINO_TODOS);
                 jsonEvento = MAPPER.writeValueAsString(evento);
                 conexaoManager.enviarMensagemParaTodos(jsonEvento);
             } else {
                 String destino = para.trim();
-                evento.setPara(destino);
+                evento.setDestinatario(destino);
                 jsonEvento = MAPPER.writeValueAsString(evento);
                 if (!usuarioRepository.existeUsuario(destino)) {
                     return respostaErro("Destinatário não encontrado.");

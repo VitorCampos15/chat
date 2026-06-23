@@ -1,5 +1,6 @@
 package com.vitor.client.beans;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vitor.client.model.AdminUsuariosResponse;
 import com.vitor.client.model.ConsultaUsuarioPayload;
@@ -265,7 +266,7 @@ public class UsuarioBean implements Serializable {
     private synchronized void processarPushServidor(String json) {
         jsonRecebido = json;
         try {
-            if (json.contains("\"usuarios_logados\"")) {
+            if (isListaUsuariosOnlinePush(json)) {
                 UsuariosLogadosResponse resp = MAPPER.readValue(json, UsuariosLogadosResponse.class);
                 if (resp.getUsuariosLogados() != null) {
                     usuariosLogados = new ArrayList<>(resp.getUsuariosLogados());
@@ -276,10 +277,29 @@ public class UsuarioBean implements Serializable {
             }
             MensagemEvent evento = MAPPER.readValue(json, MensagemEvent.class);
             if (evento.getMensagem() != null) {
-                historicoMensagens.add(new MensagemDTO(evento.getDe(), evento.getPara(), evento.getMensagem()));
+                historicoMensagens.add(new MensagemDTO(evento.getDe(), evento.getDestinatario(), evento.getMensagem()));
             }
         } catch (Exception ignored) {
             // Mantém jsonRecebido atualizado para auditoria mesmo em JSON não mapeado.
+        }
+    }
+
+    private boolean isListaUsuariosOnlinePush(String json) {
+        try {
+            JsonNode root = MAPPER.readTree(json);
+            if (!root.has("lista_usuarios")) {
+                return false;
+            }
+            JsonNode lista = root.get("lista_usuarios");
+            if (!lista.isArray()) {
+                return false;
+            }
+            if (lista.isEmpty()) {
+                return true;
+            }
+            return lista.get(0).isTextual();
+        } catch (Exception e) {
+            return false;
         }
     }
 

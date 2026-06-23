@@ -178,7 +178,7 @@ public class UsuarioService {
             request.setOp("enviarMensagem");
             request.setToken(token);
             request.setMensagem(mensagem);
-            request.setPara(para);
+            request.setDestinatario(para);
 
             String json = MAPPER.writeValueAsString(request);
             return enviarEInterpretar(json, GenericResponse.class);
