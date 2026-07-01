@@ -194,7 +194,7 @@ public class ClientHandler extends Thread {
                 }
             } else if ("enviarMensagem".equals(op)) {
                 EnviarMensagemRequest request = MAPPER.readValue(linha, EnviarMensagemRequest.class);
-                Object resp = mensagemService.processarEnvio(request, clienteRede, this);
+                Object resp = mensagemService.processarEnvio(request, clienteRede);
                 String json = MAPPER.writeValueAsString(resp);
                 enviarResposta(json);
                 System.out.println("[ClientHandler] OK enviarMensagem | cliente=" + remoto

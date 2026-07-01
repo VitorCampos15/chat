@@ -97,6 +97,7 @@ public class UsuarioBean implements Serializable {
                 usuarioLogado = usuario;
                 tcpClientService.setPushHandler(this::processarPushServidor);
                 tcpClientService.iniciarOuvinte();
+                pedirListaLogados();
             }
             aplicarMensagemProtocolo(ctx, resp);
         } catch (NumberFormatException e) {
@@ -263,25 +264,83 @@ public class UsuarioBean implements Serializable {
         }
     }
 
+    public void atualizarListaLogados() {
+        FacesContext ctx = FacesContext.getCurrentInstance();
+        if (tokenRecebido == null || tokenRecebido.isBlank()) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Faça login para listar usuários online."));
+            return;
+        }
+        try {
+            aplicarServidorTcp();
+            UsuariosLogadosResponse resp = usuarioService.listarUsuariosLogados(tokenRecebido);
+            registrarJsonsDaUltimaChamada();
+            if (resp == null) {
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", "Resposta vazia do servidor."));
+                return;
+            }
+            if (resp.getUsuariosLogados() != null) {
+                aplicarListaLogados(resp);
+                return;
+            }
+            if ("401".equals(resp.getResposta()) || "erro".equals(resp.getResposta())) {
+                String detalhe = mensagemDoServidor(resp.getMensagem());
+                ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Erro", detalhe));
+            }
+        } catch (NumberFormatException e) {
+            ctx.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Porta inválida",
+                    "Informe um número inteiro válido na barra superior."));
+        }
+    }
+
+    private void pedirListaLogados() {
+        if (tokenRecebido == null || tokenRecebido.isBlank()) {
+            return;
+        }
+        try {
+            aplicarServidorTcp();
+            UsuariosLogadosResponse resp = usuarioService.listarUsuariosLogados(tokenRecebido);
+            registrarJsonsDaUltimaChamada();
+            aplicarListaLogados(resp);
+        } catch (NumberFormatException ignored) {
+            // Mantém lista vazia; usuário pode atualizar manualmente.
+        }
+    }
+
+    private void aplicarListaLogados(UsuariosLogadosResponse resp) {
+        if (resp != null && resp.getUsuariosLogados() != null) {
+            usuariosLogados = new ArrayList<>(resp.getUsuariosLogados());
+        } else {
+            usuariosLogados.clear();
+        }
+    }
+
     private synchronized void processarPushServidor(String json) {
         jsonRecebido = json;
         try {
             if (isListaUsuariosOnlinePush(json)) {
-                UsuariosLogadosResponse resp = MAPPER.readValue(json, UsuariosLogadosResponse.class);
-                if (resp.getUsuariosLogados() != null) {
-                    usuariosLogados = new ArrayList<>(resp.getUsuariosLogados());
-                } else {
-                    usuariosLogados.clear();
-                }
+                aplicarListaLogados(MAPPER.readValue(json, UsuariosLogadosResponse.class));
                 return;
             }
             MensagemEvent evento = MAPPER.readValue(json, MensagemEvent.class);
-            if (evento.getMensagem() != null) {
-                historicoMensagens.add(new MensagemDTO(evento.getDe(), evento.getDestinatario(), evento.getMensagem()));
+            if (evento.getMensagem() == null) {
+                return;
             }
+            String autor = resolverAutorMensagem(evento);
+            String destino = evento.getDestinatario();
+            historicoMensagens.add(new MensagemDTO(autor, destino, evento.getMensagem()));
         } catch (Exception ignored) {
             // Mantém jsonRecebido atualizado para auditoria mesmo em JSON não mapeado.
         }
+    }
+
+    private static String resolverAutorMensagem(MensagemEvent evento) {
+        if (evento.getRemetente() != null && !evento.getRemetente().isBlank()) {
+            return evento.getRemetente();
+        }
+        if (evento.getDe() != null && !evento.getDe().isBlank()) {
+            return evento.getDe();
+        }
+        return "?";
     }
 
     private boolean isListaUsuariosOnlinePush(String json) {
@@ -308,11 +367,14 @@ public class UsuarioBean implements Serializable {
             return "";
         }
         String de = msg.getDe() != null ? msg.getDe() : "?";
-        String para = msg.getPara() != null ? msg.getPara() : "?";
+        String texto = msg.getMensagem() != null ? msg.getMensagem() : "";
+        String para = msg.getPara();
+        if (para == null || para.isBlank()) {
+            return "[" + de + "]: " + texto;
+        }
         if (isDestinoTodos(para)) {
             para = "Todos";
         }
-        String texto = msg.getMensagem() != null ? msg.getMensagem() : "";
         return "[" + de + " para " + para + "]: " + texto;
     }
 

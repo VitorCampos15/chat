@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vitor.server.model.EnviarMensagemRequest;
 import com.vitor.server.model.GenericResponse;
 import com.vitor.server.model.MensagemEvent;
-import com.vitor.server.network.ClientHandler;
 import com.vitor.server.network.ClienteRede;
 import com.vitor.server.network.ConexaoManager;
 import com.vitor.server.repository.UsuarioRepository;
@@ -23,7 +22,7 @@ public class MensagemService {
         this.conexaoManager = conexaoManager;
     }
 
-    public Object processarEnvio(EnviarMensagemRequest request, ClienteRede clienteRede, ClientHandler remetenteHandler) {
+    public Object processarEnvio(EnviarMensagemRequest request, ClienteRede clienteRede) {
         String token = request != null ? request.getToken() : null;
         String texto = request != null ? request.getMensagem() : null;
         String para = request != null ? request.getDestinatario() : null;
@@ -45,31 +44,27 @@ public class MensagemService {
 
         try {
             MensagemEvent evento = new MensagemEvent();
-            evento.setResposta("200");
-            evento.setDe(remetente);
+            evento.setOp("receberMensagem");
+            evento.setRemetente(remetente);
             evento.setMensagem(texto.trim());
-            String jsonEvento;
+            String jsonEvento = MAPPER.writeValueAsString(evento);
 
             if (isBroadcast(para)) {
-                evento.setDestinatario(DESTINO_TODOS);
-                jsonEvento = MAPPER.writeValueAsString(evento);
-                conexaoManager.enviarMensagemParaTodos(jsonEvento);
+                conexaoManager.enviarMensagemParaTodos(jsonEvento, remetente);
             } else {
                 String destino = para.trim();
-                evento.setDestinatario(destino);
-                jsonEvento = MAPPER.writeValueAsString(evento);
                 if (!usuarioRepository.existeUsuario(destino)) {
                     return respostaErro("Destinatário não encontrado.");
                 }
                 if (!conexaoManager.usuarioEstaConectado(destino)) {
-                    return respostaErro("Destinatário não está online.");
+                    return respostaErro("Destinatário offline");
                 }
-                conexaoManager.enviarMensagemPrivada(destino, jsonEvento, remetenteHandler);
+                conexaoManager.enviarMensagemPrivada(destino, jsonEvento);
             }
 
             GenericResponse ok = new GenericResponse();
             ok.setResposta("200");
-            ok.setMensagem("mensagem enviada");
+            ok.setMensagem("Mensagem enviada");
             return ok;
         } catch (Exception e) {
             return respostaErro("Falha ao enviar mensagem.");

@@ -14,15 +14,19 @@ public class MensagemEvent implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @JsonProperty("resposta")
-    private String resposta;
+    @JsonProperty("op")
+    private String op;
 
+    @JsonProperty("remetente")
+    private String remetente;
+
+    @JsonProperty("mensagem")
+    private String mensagem;
+
+    /** Formato legado de servidores antigos. */
     @JsonProperty("de")
     private String de;
 
     @JsonProperty("destinatario")
     private String destinatario;
-
-    @JsonProperty("mensagem")
-    private String mensagem;
 }

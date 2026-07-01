@@ -11,8 +11,10 @@ import com.vitor.client.model.EnviarMensagemRequest;
 import com.vitor.client.model.ConsultaUsuarioRequest;
 import com.vitor.client.model.ConsultaUsuarioPayload;
 import com.vitor.client.model.GenericResponse;
+import com.vitor.client.model.ListarUsuariosLogadosRequest;
 import com.vitor.client.model.LoginRequest;
 import com.vitor.client.model.LogoutRequest;
+import com.vitor.client.model.UsuariosLogadosResponse;
 import com.vitor.client.network.TcpClientService;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -184,6 +186,22 @@ public class UsuarioService {
             return enviarEInterpretar(json, GenericResponse.class);
         } catch (IOException e) {
             return respostaErroGeneric(e);
+        }
+    }
+
+    public UsuariosLogadosResponse listarUsuariosLogados(String token) {
+        try {
+            ListarUsuariosLogadosRequest request = new ListarUsuariosLogadosRequest();
+            request.setToken(token);
+
+            String json = MAPPER.writeValueAsString(request);
+            return enviarEInterpretar(json, UsuariosLogadosResponse.class);
+        } catch (IOException e) {
+            UsuariosLogadosResponse erro = new UsuariosLogadosResponse();
+            registrarJsonRecebidoEmFalha(e);
+            erro.setResposta("erro");
+            erro.setMensagem(e.getMessage());
+            return erro;
         }
     }
 

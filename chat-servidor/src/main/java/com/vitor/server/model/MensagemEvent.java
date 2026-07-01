@@ -8,18 +8,12 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MensagemEvent {
 
-    @JsonProperty("resposta")
-    private String resposta;
+    @JsonProperty("op")
+    private String op;
 
-    @JsonProperty("de")
-    private String de;
-
-    @JsonProperty("destinatario")
-    private String destinatario;
+    @JsonProperty("remetente")
+    private String remetente;
 
     @JsonProperty("mensagem")
     private String mensagem;
-
-    @JsonProperty("mensagem_erro")
-    private String mensagemErro;
 }

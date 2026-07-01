@@ -75,17 +75,21 @@ public class ConexaoManager {
         }
     }
 
-    public void enviarMensagemParaTodos(String json) {
+    public void enviarMensagemParaTodos(String json, String remetenteExcluir) {
         System.out.println("[SERVER -> BROADCAST MENSAGEM] " + json);
         if (serverWindow != null) {
             serverWindow.atualizarUltimoEnviado(json);
         }
         for (ClientHandler cliente : clientesConectados) {
+            String login = cliente.getLoginAtivo();
+            if (remetenteExcluir != null && remetenteExcluir.equals(login)) {
+                continue;
+            }
             cliente.enviarLinha(json);
         }
     }
 
-    public void enviarMensagemPrivada(String loginDestino, String json, ClientHandler remetente) {
+    public void enviarMensagemPrivada(String loginDestino, String json) {
         System.out.println("[SERVER -> MENSAGEM PRIVADA para " + loginDestino + "] " + json);
         if (serverWindow != null) {
             serverWindow.atualizarUltimoEnviado(json);
@@ -93,9 +97,6 @@ public class ConexaoManager {
         ClientHandler destinatario = buscarPorLogin(loginDestino);
         if (destinatario != null) {
             destinatario.enviarLinha(json);
-        }
-        if (remetente != null && destinatario != remetente) {
-            remetente.enviarLinha(json);
         }
     }
 

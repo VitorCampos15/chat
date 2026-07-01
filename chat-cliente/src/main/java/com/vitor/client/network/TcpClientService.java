@@ -47,6 +47,7 @@ public class TcpClientService implements Serializable {
     private transient Consumer<String> pushHandler;
 
     private volatile boolean ouvinteAtivo;
+    private transient int respostasListaLogadosPendentes;
 
     public void setIp(String ip) {
         this.ip = ip;
@@ -109,45 +110,75 @@ public class TcpClientService implements Serializable {
             if (filaRespostas != null) {
                 filaRespostas.clear();
             }
+            respostasListaLogadosPendentes = 0;
             pushHandler = null;
         }
     }
 
     public String sendRequest(String json) throws IOException {
+        boolean aguardaListaLogados = isRequisicaoListarUsuariosLogados(json);
+        if (aguardaListaLogados) {
+            incrementarListaLogadosPendentes();
+        }
+
+        boolean ouvinteAtivoLocal;
+        BlockingQueue<String> filaLocal;
         synchronized (this) {
             ultimoJsonEnviado = json;
             fecharSeEndpointMudou();
             conectarSeNecessario();
+            ouvinteAtivoLocal = ouvinteAtivo;
+            filaLocal = filaRespostas;
+            if (ouvinteAtivoLocal && filaLocal == null) {
+                filaLocal = new LinkedBlockingQueue<>();
+                filaRespostas = filaLocal;
+            }
             try {
                 out.println(json);
-                String line;
-                if (ouvinteAtivo) {
-                    if (filaRespostas == null) {
-                        filaRespostas = new LinkedBlockingQueue<>();
-                    }
-                    line = filaRespostas.poll(TIMEOUT_RESPOSTA_MS, TimeUnit.MILLISECONDS);
-                    if (line == null) {
-                        throw new IOException("Timeout aguardando resposta do servidor.");
-                    }
-                } else {
+            } catch (Exception e) {
+                if (aguardaListaLogados) {
+                    decrementarListaLogadosPendentes();
+                }
+                fecharRecursos();
+                throw new IOException("Falha ao enviar requisição ao servidor.", e);
+            }
+        }
+
+        try {
+            String line;
+            if (ouvinteAtivoLocal) {
+                line = filaLocal.poll(TIMEOUT_RESPOSTA_MS, TimeUnit.MILLISECONDS);
+                if (line == null) {
+                    throw new IOException("Timeout aguardando resposta do servidor.");
+                }
+            } else {
+                synchronized (this) {
                     line = in.readLine();
                     if (line == null) {
                         fecharRecursos();
                         throw new IOException("O servidor fechou a conexão inesperadamente.");
                     }
                 }
-                ultimoJsonRecebido = line;
-                return line;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            }
+            ultimoJsonRecebido = line;
+            return line;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            synchronized (this) {
                 fecharRecursos();
-                throw new IOException("Leitura interrompida aguardando resposta do servidor.", e);
-            } catch (IOException e) {
+            }
+            throw new IOException("Leitura interrompida aguardando resposta do servidor.", e);
+        } catch (IOException e) {
+            synchronized (this) {
                 fecharRecursos();
-                if (ultimoJsonRecebido == null) {
-                    ultimoJsonRecebido = e.getMessage();
-                }
-                throw e;
+            }
+            if (ultimoJsonRecebido == null) {
+                ultimoJsonRecebido = e.getMessage();
+            }
+            throw e;
+        } finally {
+            if (aguardaListaLogados) {
+                decrementarListaLogadosPendentes();
             }
         }
     }
@@ -171,7 +202,12 @@ public class TcpClientService implements Serializable {
                 if (line == null) {
                     break;
                 }
-                if (isPushMessage(line)) {
+                if (deveTratarComoRespostaSincrona(line)) {
+                    ultimoJsonRecebido = line;
+                    if (filaRespostas != null) {
+                        filaRespostas.offer(line);
+                    }
+                } else if (isPushMessage(line)) {
                     ultimoJsonRecebido = line;
                     Consumer<String> handler = pushHandler;
                     if (handler != null) {
@@ -192,6 +228,37 @@ public class TcpClientService implements Serializable {
         }
     }
 
+    private boolean deveTratarComoRespostaSincrona(String json) {
+        if (!isListaUsuariosOnline(json)) {
+            return false;
+        }
+        synchronized (this) {
+            if (respostasListaLogadosPendentes > 0) {
+                respostasListaLogadosPendentes--;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isRequisicaoListarUsuariosLogados(String json) {
+        return json != null && json.contains("\"listarUsuariosLogados\"");
+    }
+
+    private void incrementarListaLogadosPendentes() {
+        synchronized (this) {
+            respostasListaLogadosPendentes++;
+        }
+    }
+
+    private void decrementarListaLogadosPendentes() {
+        synchronized (this) {
+            if (respostasListaLogadosPendentes > 0) {
+                respostasListaLogadosPendentes--;
+            }
+        }
+    }
+
     private static boolean isPushMessage(String json) {
         if (json == null || json.isBlank()) {
             return false;
@@ -201,12 +268,23 @@ public class TcpClientService implements Serializable {
             if (isListaUsuariosOnlinePush(root)) {
                 return true;
             }
+            if (root.has("op") && "receberMensagem".equals(root.get("op").asText())) {
+                return true;
+            }
             return root.has("mensagem") && root.has("de") && root.has("destinatario");
         } catch (Exception ignored) {
-            return (json.contains("\"lista_usuarios\"")
-                    && !json.contains("\"usuario\""))
+            return isListaUsuariosOnline(json)
+                    || json.contains("\"receberMensagem\"")
                     || (json.contains("\"mensagem\"") && json.contains("\"de\"")
                     && json.contains("\"destinatario\""));
+        }
+    }
+
+    private static boolean isListaUsuariosOnline(String json) {
+        try {
+            return isListaUsuariosOnlinePush(MAPPER.readTree(json));
+        } catch (Exception e) {
+            return json.contains("\"lista_usuarios\"") && !json.contains("\"usuario\"");
         }
     }
 
@@ -279,5 +357,6 @@ public class TcpClientService implements Serializable {
         if (filaRespostas != null) {
             filaRespostas.clear();
         }
+        respostasListaLogadosPendentes = 0;
     }
 }

@@ -105,6 +105,12 @@
         <div class="chat-layout">
             <section class="chat-col chat-contatos">
                 <h2>Contatos online</h2>
+                <h:commandButton id="btnAtualizarLista" value="Atualizar lista"
+                                 action="#{usuarioBean.atualizarListaLogados()}"
+                                 style="margin-bottom:0.5rem;">
+                    <f:ajax execute="@this"
+                            render="painelContatos :formPrincipal:painelJsonEnviado :formPrincipal:txtJsonEnviado :formPrincipal:painelJsonRecebido :formPrincipal:txtJsonRecebido"/>
+                </h:commandButton>
                 <h:panelGroup id="painelContatos" layout="block">
                     <ul>
                         <ui:repeat value="#{usuarioBean.usuariosLogados}" var="login">
